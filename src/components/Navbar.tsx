@@ -2,12 +2,19 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FileText, Moon, Sun, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SaveIndicator from "@/components/SaveIndicator";
+import { SaveStatus } from "@/hooks/useResumeAutoSave";
 
-const Navbar = () => {
+interface NavbarProps {
+  saveStatus?: SaveStatus;
+}
+
+const Navbar = ({ saveStatus }: NavbarProps) => {
   const [isDark, setIsDark] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const isLanding = location.pathname === "/";
+  const isEditor = location.pathname.startsWith("/editor");
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
@@ -33,6 +40,13 @@ const Navbar = () => {
             </span>
           </Link>
 
+          {/* Center - Save Status (only on editor) */}
+          {isEditor && saveStatus && (
+            <div className="hidden md:flex items-center">
+              <SaveIndicator status={saveStatus} />
+            </div>
+          )}
+
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             {isLanding ? (
@@ -50,18 +64,25 @@ const Navbar = () => {
                   How It Works
                 </a>
               </>
-            ) : (
+            ) : !isEditor ? (
               <Link
                 to="/"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 Home
               </Link>
-            )}
+            ) : null}
           </div>
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-3">
+            {/* Save Status on mobile */}
+            {isEditor && saveStatus && (
+              <div className="md:hidden">
+                <SaveIndicator status={saveStatus} />
+              </div>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
@@ -85,6 +106,10 @@ const Navbar = () => {
                     <Link to="/dashboard">Get Started Free</Link>
                   </Button>
                 </>
+              ) : isEditor ? (
+                <Button variant="hero-outline" asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </Button>
               ) : (
                 <Button variant="hero-outline" asChild>
                   <Link to="/">Back to Home</Link>
@@ -137,6 +162,12 @@ const Navbar = () => {
                     </Button>
                   </div>
                 </>
+              ) : isEditor ? (
+                <div className="px-4">
+                  <Button variant="hero-outline" asChild className="w-full">
+                    <Link to="/dashboard">Dashboard</Link>
+                  </Button>
+                </div>
               ) : (
                 <div className="px-4">
                   <Button variant="hero-outline" asChild className="w-full">

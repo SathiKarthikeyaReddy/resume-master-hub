@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Sparkles, Zap, Crown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Zap, Crown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PromoSlide {
@@ -36,21 +36,29 @@ const defaultPromos: PromoSlide[] = [
 
 interface PromoCarouselProps {
   slides?: PromoSlide[];
+  autoPlayInterval?: number;
 }
 
-const PromoCarousel = ({ slides = defaultPromos }: PromoCarouselProps) => {
+const PromoCarousel = ({ 
+  slides = defaultPromos, 
+  autoPlayInterval = 8000 
+}: PromoCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isHidden, setIsHidden] = useState(() => {
+    // Check if banner was closed in this session
+    return sessionStorage.getItem("promo-carousel-hidden") === "true";
+  });
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || isHidden) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % slides.length);
-    }, 4000);
+    }, autoPlayInterval);
 
     return () => clearInterval(interval);
-  }, [isPaused, slides.length]);
+  }, [isPaused, isHidden, slides.length, autoPlayInterval]);
 
   const goToPrev = () => {
     setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
@@ -60,12 +68,29 @@ const PromoCarousel = ({ slides = defaultPromos }: PromoCarouselProps) => {
     setCurrentIndex((prev) => (prev + 1) % slides.length);
   };
 
+  const handleClose = () => {
+    setIsHidden(true);
+    sessionStorage.setItem("promo-carousel-hidden", "true");
+  };
+
+  if (isHidden) return null;
+
   return (
     <div
       className="relative overflow-hidden rounded-xl mb-6"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
+      {/* Close Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-1 right-1 z-10 h-6 w-6 text-white/80 hover:text-white hover:bg-white/10"
+        onClick={handleClose}
+      >
+        <X className="w-3.5 h-3.5" />
+      </Button>
+
       <div
         className="flex transition-transform duration-500 ease-out"
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -107,7 +132,7 @@ const PromoCarousel = ({ slides = defaultPromos }: PromoCarouselProps) => {
           <ChevronLeft className="w-4 h-4" />
         </Button>
       </div>
-      <div className="absolute inset-y-0 right-0 flex items-center">
+      <div className="absolute inset-y-0 right-8 flex items-center">
         <Button
           variant="ghost"
           size="icon"

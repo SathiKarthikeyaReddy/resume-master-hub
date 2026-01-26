@@ -1,11 +1,10 @@
-import { useState } from "react";
 import { Briefcase, Plus, Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { WorkExperience } from "@/types/resume";
+import BulletPointInput from "./BulletPointInput";
 
 interface ExperienceSectionProps {
   data: WorkExperience[];
@@ -22,7 +21,7 @@ const ExperienceSection = ({ data, onChange }: ExperienceSectionProps) => {
       startDate: "",
       endDate: "",
       current: false,
-      description: "",
+      bullets: [],
     };
     onChange([...data, newExp]);
   };
@@ -30,7 +29,7 @@ const ExperienceSection = ({ data, onChange }: ExperienceSectionProps) => {
   const updateExperience = (
     id: string,
     field: keyof WorkExperience,
-    value: string | boolean
+    value: string | boolean | string[]
   ) => {
     onChange(
       data.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
@@ -189,19 +188,12 @@ const ExperienceSection = ({ data, onChange }: ExperienceSectionProps) => {
                 </Label>
               </div>
 
-              <div>
-                <Label className="text-sm text-muted-foreground">
-                  Description
-                </Label>
-                <Textarea
-                  placeholder="• Led development of key features...&#10;• Improved performance by 40%...&#10;• Mentored 3 junior developers..."
-                  value={exp.description}
-                  onChange={(e) =>
-                    updateExperience(exp.id, "description", e.target.value)
-                  }
-                  className="mt-1 min-h-[100px] resize-none"
-                />
-              </div>
+              <BulletPointInput
+                bullets={exp.bullets}
+                onChange={(bullets) =>
+                  updateExperience(exp.id, "bullets", bullets)
+                }
+              />
             </div>
           ))}
         </div>

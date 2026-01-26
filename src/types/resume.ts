@@ -15,7 +15,7 @@ export interface WorkExperience {
   startDate: string;
   endDate: string;
   current: boolean;
-  description: string;
+  bullets: string[];
 }
 
 export interface Education {

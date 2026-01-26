@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Eye, Edit3, Save, Download } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useReactToPrint } from "react-to-print";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,10 +13,13 @@ import ExperienceSection from "@/components/editor/ExperienceSection";
 import EducationSection from "@/components/editor/EducationSection";
 import SkillsSection from "@/components/editor/SkillsSection";
 import ResumePreview from "@/components/editor/ResumePreview";
+import ResumeStrengthMeter from "@/components/editor/ResumeStrengthMeter";
+import GoProButton from "@/components/editor/GoProButton";
 import SaveIndicator from "@/components/SaveIndicator";
 import { ResumeData, defaultResumeData } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useResumeAutoSave, SaveStatus } from "@/hooks/useResumeAutoSave";
+import { useResumeAutoSave } from "@/hooks/useResumeAutoSave";
+import { useResumeStrength } from "@/hooks/useResumeStrength";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,13 +30,34 @@ const ResumeEditor = () => {
   const [resumeId, setResumeId] = useState<string | null>(id || null);
   const [activeView, setActiveView] = useState<"editor" | "preview">("editor");
   const [isLoading, setIsLoading] = useState(true);
+  const [isPro, setIsPro] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const resumeRef = useRef<HTMLDivElement>(null);
 
   const { saveStatus } = useResumeAutoSave({
     resumeId,
     resumeData,
     debounceMs: 2000,
+  });
+
+  const strength = useResumeStrength(resumeData);
+
+  const handlePrint = useReactToPrint({
+    contentRef: resumeRef,
+    documentTitle: resumeData.personalInfo.fullName || "Resume",
+    pageStyle: `
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    `,
   });
 
   // Load resume data if editing existing
@@ -114,6 +139,16 @@ const ResumeEditor = () => {
     setResumeData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleGoPro = () => {
+    setIsPro(!isPro);
+    toast({
+      title: isPro ? "Pro mode deactivated" : "Pro mode activated!",
+      description: isPro
+        ? "Ads will now be shown."
+        : "All ads have been hidden. Enjoy your clean workspace!",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -162,8 +197,22 @@ const ResumeEditor = () => {
           >
             <ScrollArea className="h-full">
               <div className="p-6 pb-24 lg:pb-6">
-                {/* Promo Carousel */}
-                <PromoCarousel autoPlayInterval={8000} />
+                {/* Go Pro Button & Promo Carousel */}
+                <div className="flex justify-end mb-4">
+                  <GoProButton isPro={isPro} onToggle={handleGoPro} />
+                </div>
+
+                {!isPro && <PromoCarousel autoPlayInterval={8000} />}
+
+                {/* Resume Strength Meter */}
+                <div className="mb-6">
+                  <ResumeStrengthMeter
+                    percentage={strength.percentage}
+                    label={strength.label}
+                    completedSections={strength.completedSections}
+                    missingSections={strength.missingSections}
+                  />
+                </div>
 
                 {/* Form Sections */}
                 <div className="space-y-8">
@@ -186,12 +235,14 @@ const ResumeEditor = () => {
                     />
                   </div>
 
-                  {/* Native Ad Placement */}
-                  <NativeAdCard
-                    title="Resume Review Service"
-                    description="Get expert feedback on your resume from HR professionals. First review free!"
-                    ctaText="Get Free Review"
-                  />
+                  {/* Native Ad Placement - Hidden when Pro */}
+                  {!isPro && (
+                    <NativeAdCard
+                      title="Resume Review Service"
+                      description="Get expert feedback on your resume from HR professionals. First review free!"
+                      ctaText="Get Free Review"
+                    />
+                  )}
 
                   <div className="border-t border-border pt-6">
                     <EducationSection
@@ -224,7 +275,11 @@ const ResumeEditor = () => {
                         {saveStatus === "idle" && "Auto-save enabled"}
                       </div>
                     )}
-                    <Button variant="outline" className="flex-1 gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 gap-2"
+                      onClick={() => handlePrint()}
+                    >
                       <Download className="w-4 h-4" />
                       Download PDF
                     </Button>
@@ -250,7 +305,10 @@ const ResumeEditor = () => {
                 </span>
               </div>
               <div className="transform scale-[0.7] lg:scale-[0.8] origin-top">
-                <ResumePreview data={resumeData} />
+                {/* Printable Resume - always white bg, black text */}
+                <div ref={resumeRef}>
+                  <ResumePreview data={resumeData} />
+                </div>
               </div>
             </div>
           </div>

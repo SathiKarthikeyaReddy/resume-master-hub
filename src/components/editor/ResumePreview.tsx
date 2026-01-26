@@ -83,10 +83,12 @@ const ResumePreview = ({ data }: ResumePreviewProps) => {
                 {exp.company}
                 {exp.location && `, ${exp.location}`}
               </div>
-              {exp.description && (
-                <p className="text-xs text-gray-700 whitespace-pre-line">
-                  {exp.description}
-                </p>
+              {exp.bullets && exp.bullets.length > 0 && (
+                <ul className="text-xs text-gray-700 list-disc list-inside space-y-0.5">
+                  {exp.bullets.filter(b => b.trim()).map((bullet, idx) => (
+                    <li key={idx}>{bullet}</li>
+                  ))}
+                </ul>
               )}
             </div>
           ))}

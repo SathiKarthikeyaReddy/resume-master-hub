@@ -1,4 +1,5 @@
-import { FileText, MoreVertical, Clock } from "lucide-react";
+import { FileText, MoreVertical, Clock, Trash2, Copy, Download } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,39 +13,42 @@ interface ResumeCardProps {
   title: string;
   lastEdited: string;
   template?: string;
+  onDelete?: () => void;
 }
 
-const ResumeCard = ({ id, title, lastEdited, template = "modern" }: ResumeCardProps) => {
+const ResumeCard = ({ id, title, lastEdited, template = "modern", onDelete }: ResumeCardProps) => {
   return (
-    <div className="group relative bg-card rounded-2xl border border-border/50 overflow-hidden hover-lift hover-glow transition-all duration-300 cursor-pointer">
+    <div className="group relative bg-card rounded-2xl border border-border/50 overflow-hidden hover-lift hover-glow transition-all duration-300">
       {/* Thumbnail Preview */}
-      <div className="aspect-[3/4] bg-muted/30 relative overflow-hidden">
-        <div className="absolute inset-4 bg-background rounded-lg shadow-sm p-4 scale-[0.85] origin-top">
-          {/* Mini Resume Preview */}
-          <div className="space-y-3">
-            <div className="h-3 bg-primary/30 rounded w-1/2" />
-            <div className="h-2 bg-muted rounded w-1/3" />
-            <div className="border-t border-border/50 my-3" />
-            <div className="space-y-1.5">
-              <div className="h-1.5 bg-muted rounded w-full" />
-              <div className="h-1.5 bg-muted rounded w-4/5" />
-              <div className="h-1.5 bg-muted rounded w-3/5" />
-            </div>
-            <div className="border-t border-border/50 my-3" />
-            <div className="space-y-1.5">
-              <div className="h-1.5 bg-muted rounded w-full" />
-              <div className="h-1.5 bg-muted rounded w-5/6" />
+      <Link to={`/editor/${id}`}>
+        <div className="aspect-[3/4] bg-muted/30 relative overflow-hidden cursor-pointer">
+          <div className="absolute inset-4 bg-background rounded-lg shadow-sm p-4 scale-[0.85] origin-top">
+            {/* Mini Resume Preview */}
+            <div className="space-y-3">
+              <div className="h-3 bg-primary/30 rounded w-1/2" />
+              <div className="h-2 bg-muted rounded w-1/3" />
+              <div className="border-t border-border/50 my-3" />
+              <div className="space-y-1.5">
+                <div className="h-1.5 bg-muted rounded w-full" />
+                <div className="h-1.5 bg-muted rounded w-4/5" />
+                <div className="h-1.5 bg-muted rounded w-3/5" />
+              </div>
+              <div className="border-t border-border/50 my-3" />
+              <div className="space-y-1.5">
+                <div className="h-1.5 bg-muted rounded w-full" />
+                <div className="h-1.5 bg-muted rounded w-5/6" />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <Button variant="hero" size="sm">
-            Edit Resume
-          </Button>
+          {/* Hover Overlay */}
+          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <Button variant="hero" size="sm">
+              Edit Resume
+            </Button>
+          </div>
         </div>
-      </div>
+      </Link>
 
       {/* Card Footer */}
       <div className="p-4 border-t border-border/50">
@@ -68,15 +72,32 @@ const ResumeCard = ({ id, title, lastEdited, template = "modern" }: ResumeCardPr
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to={`/editor/${id}`} className="flex items-center">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Edit
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem>
-                <FileText className="w-4 h-4 mr-2" />
-                Edit
+                <Copy className="w-4 h-4 mr-2" />
+                Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              <DropdownMenuItem>Download PDF</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
-                Delete
+              <DropdownMenuItem>
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
               </DropdownMenuItem>
+              {onDelete && (
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onDelete();
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FileText, Moon, Sun, Menu, X } from "lucide-react";
+import { FileText, Moon, Sun, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SaveIndicator from "@/components/SaveIndicator";
 import { SaveStatus } from "@/hooks/useResumeAutoSave";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavbarProps {
   saveStatus?: SaveStatus;
@@ -12,6 +13,7 @@ interface NavbarProps {
 const Navbar = ({ saveStatus }: NavbarProps) => {
   const [isDark, setIsDark] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const isLanding = location.pathname === "/";
   const isEditor = location.pathname.startsWith("/editor");
@@ -24,6 +26,10 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
   const toggleDarkMode = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -49,7 +55,7 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            {isLanding ? (
+            {isLanding && !user ? (
               <>
                 <a
                   href="#features"
@@ -64,12 +70,12 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
                   How It Works
                 </a>
               </>
-            ) : !isEditor ? (
+            ) : !isEditor && user ? (
               <Link
-                to="/"
+                to="/dashboard"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
-                Home
+                Dashboard
               </Link>
             ) : null}
           </div>
@@ -97,23 +103,30 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
             </Button>
 
             <div className="hidden md:flex items-center gap-3">
-              {isLanding ? (
+              {user ? (
                 <>
-                  <Button variant="ghost" asChild>
-                    <Link to="/dashboard">Sign In</Link>
-                  </Button>
-                  <Button variant="hero" asChild>
-                    <Link to="/dashboard">Get Started Free</Link>
+                  {isEditor ? (
+                    <Button variant="hero-outline" asChild>
+                      <Link to="/dashboard">Dashboard</Link>
+                    </Button>
+                  ) : (
+                    <Button variant="hero" asChild>
+                      <Link to="/editor">New Resume</Link>
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out">
+                    <LogOut className="w-4 h-4" />
                   </Button>
                 </>
-              ) : isEditor ? (
-                <Button variant="hero-outline" asChild>
-                  <Link to="/dashboard">Dashboard</Link>
-                </Button>
               ) : (
-                <Button variant="hero-outline" asChild>
-                  <Link to="/">Back to Home</Link>
-                </Button>
+                <>
+                  <Button variant="ghost" asChild>
+                    <Link to="/auth">Sign In</Link>
+                  </Button>
+                  <Button variant="hero" asChild>
+                    <Link to="/auth">Get Started Free</Link>
+                  </Button>
+                </>
               )}
             </div>
 
@@ -137,43 +150,55 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border/50 animate-fade-up">
             <div className="flex flex-col gap-3">
-              {isLanding ? (
+              {user ? (
                 <>
-                  <a
-                    href="#features"
-                    className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Features
-                  </a>
-                  <a
-                    href="#how-it-works"
-                    className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    How It Works
-                  </a>
+                  {isEditor ? (
+                    <div className="px-4">
+                      <Button variant="hero-outline" asChild className="w-full">
+                        <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="px-4 flex flex-col gap-2">
+                      <Button variant="hero" asChild className="w-full">
+                        <Link to="/editor" onClick={() => setIsMenuOpen(false)}>New Resume</Link>
+                      </Button>
+                      <Button variant="ghost" onClick={handleSignOut} className="w-full">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {isLanding && (
+                    <>
+                      <a
+                        href="#features"
+                        className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Features
+                      </a>
+                      <a
+                        href="#how-it-works"
+                        className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        How It Works
+                      </a>
+                    </>
+                  )}
                   <div className="px-4 pt-2 flex flex-col gap-2">
                     <Button variant="ghost" asChild className="w-full">
-                      <Link to="/dashboard">Sign In</Link>
+                      <Link to="/auth" onClick={() => setIsMenuOpen(false)}>Sign In</Link>
                     </Button>
                     <Button variant="hero" asChild className="w-full">
-                      <Link to="/dashboard">Get Started Free</Link>
+                      <Link to="/auth" onClick={() => setIsMenuOpen(false)}>Get Started Free</Link>
                     </Button>
                   </div>
                 </>
-              ) : isEditor ? (
-                <div className="px-4">
-                  <Button variant="hero-outline" asChild className="w-full">
-                    <Link to="/dashboard">Dashboard</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="px-4">
-                  <Button variant="hero-outline" asChild className="w-full">
-                    <Link to="/">Back to Home</Link>
-                  </Button>
-                </div>
               )}
             </div>
           </div>

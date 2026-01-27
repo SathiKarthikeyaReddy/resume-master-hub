@@ -12,9 +12,12 @@ import SummarySection from "@/components/editor/SummarySection";
 import ExperienceSection from "@/components/editor/ExperienceSection";
 import EducationSection from "@/components/editor/EducationSection";
 import SkillsSection from "@/components/editor/SkillsSection";
-import ResumePreview from "@/components/editor/ResumePreview";
 import ResumeStrengthMeter from "@/components/editor/ResumeStrengthMeter";
 import GoProButton from "@/components/editor/GoProButton";
+import TemplateSelector, { TemplateType } from "@/components/editor/TemplateSelector";
+import ClassicTemplate from "@/components/editor/templates/ClassicTemplate";
+import ModernTemplate from "@/components/editor/templates/ModernTemplate";
+import MinimalTemplate from "@/components/editor/templates/MinimalTemplate";
 import SaveIndicator from "@/components/SaveIndicator";
 import { ResumeData, defaultResumeData } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,6 +34,7 @@ const ResumeEditor = () => {
   const [activeView, setActiveView] = useState<"editor" | "preview">("editor");
   const [isLoading, setIsLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
+  const [template, setTemplate] = useState<TemplateType>("classic");
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const resumeRef = useRef<HTMLDivElement>(null);
@@ -82,8 +86,12 @@ const ResumeEditor = () => {
         }
 
         if (data?.content) {
-          setResumeData(data.content as unknown as ResumeData);
+          const content = data.content as unknown as ResumeData & { template?: TemplateType };
+          setResumeData(content);
           setResumeId(data.id);
+          if (content.template) {
+            setTemplate(content.template);
+          }
         }
       }
       setIsLoading(false);
@@ -104,12 +112,13 @@ const ResumeEditor = () => {
       return;
     }
 
+    const contentWithTemplate = { ...resumeData, template };
     const { data, error } = await supabase
       .from("resumes")
       .insert({
         user_id: user.user.id,
         title: resumeData.personalInfo.fullName || "Untitled Resume",
-        content: JSON.parse(JSON.stringify(resumeData)),
+        content: JSON.parse(JSON.stringify(contentWithTemplate)),
       })
       .select()
       .single();
@@ -147,6 +156,18 @@ const ResumeEditor = () => {
         ? "Ads will now be shown."
         : "All ads have been hidden. Enjoy your clean workspace!",
     });
+  };
+
+  const renderTemplate = () => {
+    switch (template) {
+      case "modern":
+        return <ModernTemplate data={resumeData} />;
+      case "minimal":
+        return <MinimalTemplate data={resumeData} />;
+      case "classic":
+      default:
+        return <ClassicTemplate data={resumeData} />;
+    }
   };
 
   if (isLoading) {
@@ -203,6 +224,9 @@ const ResumeEditor = () => {
                 </div>
 
                 {!isPro && <PromoCarousel autoPlayInterval={8000} />}
+
+                {/* Template Selector */}
+                <TemplateSelector selected={template} onChange={setTemplate} />
 
                 {/* Resume Strength Meter */}
                 <div className="mb-6">
@@ -307,7 +331,7 @@ const ResumeEditor = () => {
               <div className="transform scale-[0.7] lg:scale-[0.8] origin-top">
                 {/* Printable Resume - always white bg, black text */}
                 <div ref={resumeRef}>
-                  <ResumePreview data={resumeData} />
+                  {renderTemplate()}
                 </div>
               </div>
             </div>

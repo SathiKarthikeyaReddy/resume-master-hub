@@ -1,6 +1,7 @@
 import { FileText } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import AIAssistant from "@/components/editor/AIAssistant";
 
 interface SummarySectionProps {
   data: string;
@@ -10,9 +11,16 @@ interface SummarySectionProps {
 const SummarySection = ({ data, onChange }: SummarySectionProps) => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-foreground">
-        <FileText className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-lg">Professional Summary</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-foreground">
+          <FileText className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold text-lg">Professional Summary</h3>
+        </div>
+        <AIAssistant
+          type="summary"
+          currentContent={data}
+          onSuggestion={onChange}
+        />
       </div>
 
       <div>

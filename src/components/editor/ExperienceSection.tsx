@@ -193,6 +193,8 @@ const ExperienceSection = ({ data, onChange }: ExperienceSectionProps) => {
                 onChange={(bullets) =>
                   updateExperience(exp.id, "bullets", bullets)
                 }
+                jobTitle={exp.jobTitle}
+                company={exp.company}
               />
             </div>
           ))}

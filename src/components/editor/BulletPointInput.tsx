@@ -1,13 +1,16 @@
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import AIAssistant from "@/components/editor/AIAssistant";
 
 interface BulletPointInputProps {
   bullets: string[];
   onChange: (bullets: string[]) => void;
+  jobTitle?: string;
+  company?: string;
 }
 
-const BulletPointInput = ({ bullets, onChange }: BulletPointInputProps) => {
+const BulletPointInput = ({ bullets, onChange, jobTitle, company }: BulletPointInputProps) => {
   const addBullet = () => {
     onChange([...bullets, ""]);
   };
@@ -20,6 +23,10 @@ const BulletPointInput = ({ bullets, onChange }: BulletPointInputProps) => {
 
   const removeBullet = (index: number) => {
     onChange(bullets.filter((_, i) => i !== index));
+  };
+
+  const handleAISuggestion = (index: number, suggestion: string) => {
+    updateBullet(index, suggestion);
   };
 
   return (
@@ -70,6 +77,12 @@ const BulletPointInput = ({ bullets, onChange }: BulletPointInputProps) => {
                   className="h-8 text-sm"
                 />
               </div>
+              <AIAssistant
+                type="bullet"
+                currentContent={bullet}
+                context={{ jobTitle, company }}
+                onSuggestion={(suggestion) => handleAISuggestion(index, suggestion)}
+              />
               <Button
                 type="button"
                 variant="ghost"

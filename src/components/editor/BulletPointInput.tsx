@@ -1,7 +1,21 @@
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import AIAssistant from "@/components/editor/AIAssistant";
+import SortableBulletItem from "./SortableBulletItem";
 
 interface BulletPointInputProps {
   bullets: string[];
@@ -11,6 +25,13 @@ interface BulletPointInputProps {
 }
 
 const BulletPointInput = ({ bullets, onChange, jobTitle, company }: BulletPointInputProps) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const addBullet = () => {
     onChange([...bullets, ""]);
   };
@@ -25,9 +46,17 @@ const BulletPointInput = ({ bullets, onChange, jobTitle, company }: BulletPointI
     onChange(bullets.filter((_, i) => i !== index));
   };
 
-  const handleAISuggestion = (index: number, suggestion: string) => {
-    updateBullet(index, suggestion);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = bullets.findIndex((_, i) => `bullet-${i}` === active.id);
+      const newIndex = bullets.findIndex((_, i) => `bullet-${i}` === over.id);
+      onChange(arrayMove(bullets, oldIndex, newIndex));
+    }
   };
+
+  const bulletIds = bullets.map((_, i) => `bullet-${i}`);
 
   return (
     <div className="space-y-2">
@@ -64,37 +93,28 @@ const BulletPointInput = ({ bullets, onChange, jobTitle, company }: BulletPointI
           </Button>
         </div>
       ) : (
-        <div className="space-y-2">
-          {bullets.map((bullet, index) => (
-            <div key={index} className="flex items-center gap-2 group">
-              <GripVertical className="w-3 h-3 text-muted-foreground/50 cursor-move flex-shrink-0" />
-              <div className="flex items-center gap-1 flex-1">
-                <span className="text-muted-foreground text-sm">•</span>
-                <Input
-                  value={bullet}
-                  onChange={(e) => updateBullet(index, e.target.value)}
-                  placeholder="Achieved X by doing Y, resulting in Z..."
-                  className="h-8 text-sm"
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={bulletIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {bullets.map((bullet, index) => (
+                <SortableBulletItem
+                  key={`bullet-${index}`}
+                  id={`bullet-${index}`}
+                  bullet={bullet}
+                  index={index}
+                  jobTitle={jobTitle}
+                  company={company}
+                  onUpdate={(value) => updateBullet(index, value)}
+                  onRemove={() => removeBullet(index)}
                 />
-              </div>
-              <AIAssistant
-                type="bullet"
-                currentContent={bullet}
-                context={{ jobTitle, company }}
-                onSuggestion={(suggestion) => handleAISuggestion(index, suggestion)}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                onClick={() => removeBullet(index)}
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );

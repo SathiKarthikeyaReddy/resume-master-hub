@@ -45,6 +45,24 @@ Make it ATS-friendly.`;
       userPrompt = currentContent
         ? `Improve this resume bullet point ${jobContext}:\n\n"${currentContent}"\n\nProvide only the improved bullet point, nothing else.`
         : `Write an impactful resume bullet point ${jobContext}. Make it achievement-focused. Provide only the bullet point, nothing else.`;
+    } else if (type === "skills") {
+      systemPrompt = `You are an expert resume writer and career advisor. Your task is to suggest relevant skills based on job titles and experience.
+Focus on:
+- Technical skills relevant to the roles
+- Soft skills that complement the experience
+- Industry-standard tools and technologies
+- ATS-friendly skill keywords that recruiters search for
+Return skills as a comma-separated list.`;
+
+      const jobTitles = context?.jobTitles?.join(", ") || "";
+      const companies = context?.companies?.join(", ") || "";
+      const existingSkills = context?.existingSkills?.join(", ") || "";
+      
+      userPrompt = `Based on these job titles: ${jobTitles || "general professional"}
+${companies ? `At companies: ${companies}` : ""}
+${existingSkills ? `Already has these skills: ${existingSkills}` : ""}
+
+Suggest 8-10 additional relevant skills that would strengthen this resume. Return ONLY a comma-separated list of skills, nothing else.`;
     }
 
     console.log(`Processing ${type} request...`);

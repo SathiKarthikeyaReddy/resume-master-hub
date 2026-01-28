@@ -1,16 +1,22 @@
 import { useState } from "react";
-import { Wrench, Plus, X } from "lucide-react";
+import { Wrench, Plus, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface SkillsSectionProps {
   data: string[];
   onChange: (data: string[]) => void;
+  jobTitles?: string[];
+  companies?: string[];
 }
 
-const SkillsSection = ({ data, onChange }: SkillsSectionProps) => {
+const SkillsSection = ({ data, onChange, jobTitles = [], companies = [] }: SkillsSectionProps) => {
   const [inputValue, setInputValue] = useState("");
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const { toast } = useToast();
 
   const addSkill = () => {
     const skill = inputValue.trim();
@@ -28,6 +34,64 @@ const SkillsSection = ({ data, onChange }: SkillsSectionProps) => {
     if (e.key === "Enter") {
       e.preventDefault();
       addSkill();
+    }
+  };
+
+  const handleAISuggestions = async () => {
+    setIsLoadingAI(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke("ai-resume-helper", {
+        body: {
+          type: "skills",
+          currentContent: "",
+          context: {
+            jobTitles,
+            companies,
+            existingSkills: data,
+          },
+        },
+      });
+
+      if (error) {
+        if (error.message?.includes("429")) {
+          toast({
+            title: "Rate limit reached",
+            description: "Please wait a moment before trying again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
+
+      if (result?.suggestion) {
+        const suggestedSkills = result.suggestion
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter((s: string) => s && !data.includes(s));
+        
+        if (suggestedSkills.length > 0) {
+          onChange([...data, ...suggestedSkills]);
+          toast({
+            title: "Skills added!",
+            description: `Added ${suggestedSkills.length} AI-suggested skills.`,
+          });
+        } else {
+          toast({
+            title: "No new skills found",
+            description: "All suggested skills are already in your list.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("AI skills error:", error);
+      toast({
+        title: "Could not get suggestions",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingAI(false);
     }
   };
 
@@ -52,9 +116,30 @@ const SkillsSection = ({ data, onChange }: SkillsSectionProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-foreground">
-        <Wrench className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-lg">Skills</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-foreground">
+          <Wrench className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold text-lg">Skills</h3>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleAISuggestions}
+          disabled={isLoadingAI}
+          className="gap-1.5 text-xs"
+        >
+          {isLoadingAI ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Suggesting...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3 h-3" />
+              AI Suggest Skills
+            </>
+          )}
+        </Button>
       </div>
 
       <div className="flex gap-2">

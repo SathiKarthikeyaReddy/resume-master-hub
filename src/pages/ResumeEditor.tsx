@@ -18,6 +18,8 @@ import TemplateSelector, { TemplateType } from "@/components/editor/TemplateSele
 import ClassicTemplate from "@/components/editor/templates/ClassicTemplate";
 import ModernTemplate from "@/components/editor/templates/ModernTemplate";
 import MinimalTemplate from "@/components/editor/templates/MinimalTemplate";
+import CreativeTemplate from "@/components/editor/templates/CreativeTemplate";
+import ExecutiveTemplate from "@/components/editor/templates/ExecutiveTemplate";
 import SaveIndicator from "@/components/SaveIndicator";
 import { ResumeData, defaultResumeData } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -164,6 +166,10 @@ const ResumeEditor = () => {
         return <ModernTemplate data={resumeData} />;
       case "minimal":
         return <MinimalTemplate data={resumeData} />;
+      case "creative":
+        return <CreativeTemplate data={resumeData} />;
+      case "executive":
+        return <ExecutiveTemplate data={resumeData} />;
       case "classic":
       default:
         return <ClassicTemplate data={resumeData} />;
@@ -279,6 +285,8 @@ const ResumeEditor = () => {
                     <SkillsSection
                       data={resumeData.skills}
                       onChange={(data) => updateResumeData("skills", data)}
+                      jobTitles={resumeData.experience.map(e => e.jobTitle).filter(Boolean)}
+                      companies={resumeData.experience.map(e => e.company).filter(Boolean)}
                     />
                   </div>
 

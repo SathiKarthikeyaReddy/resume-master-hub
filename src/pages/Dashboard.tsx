@@ -68,6 +68,35 @@ const Dashboard = () => {
     }
   };
 
+  const handleDuplicate = async (id: string) => {
+    const resumeToDuplicate = resumes.find((r) => r.id === id);
+    if (!resumeToDuplicate || !user) return;
+
+    const { data, error } = await supabase
+      .from("resumes")
+      .insert([{
+        user_id: user.id,
+        title: `${resumeToDuplicate.title} (Copy)`,
+        content: JSON.parse(JSON.stringify(resumeToDuplicate.content)),
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Error duplicating resume",
+        description: "Could not duplicate the resume. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      setResumes([data, ...resumes]);
+      toast({
+        title: "Resume duplicated",
+        description: "Your resume has been copied successfully.",
+      });
+    }
+  };
+
   const formatLastEdited = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -166,6 +195,7 @@ const Dashboard = () => {
                     lastEdited={formatLastEdited(resume.updated_at)}
                     template={content?.template || "classic"}
                     onDelete={() => handleDelete(resume.id)}
+                    onDuplicate={() => handleDuplicate(resume.id)}
                   />
                 );
               })}

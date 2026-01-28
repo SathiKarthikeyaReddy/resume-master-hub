@@ -14,9 +14,10 @@ interface ResumeCardProps {
   lastEdited: string;
   template?: string;
   onDelete?: () => void;
+  onDuplicate?: () => void;
 }
 
-const ResumeCard = ({ id, title, lastEdited, template = "modern", onDelete }: ResumeCardProps) => {
+const ResumeCard = ({ id, title, lastEdited, template = "modern", onDelete, onDuplicate }: ResumeCardProps) => {
   return (
     <div className="group relative bg-card rounded-2xl border border-border/50 overflow-hidden hover-lift hover-glow transition-all duration-300">
       {/* Thumbnail Preview */}
@@ -78,10 +79,17 @@ const ResumeCard = ({ id, title, lastEdited, template = "modern", onDelete }: Re
                   Edit
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Copy className="w-4 h-4 mr-2" />
-                Duplicate
-              </DropdownMenuItem>
+              {onDuplicate && (
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onDuplicate();
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem>
                 <Download className="w-4 h-4 mr-2" />
                 Download PDF

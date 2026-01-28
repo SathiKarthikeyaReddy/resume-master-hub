@@ -1,10 +1,22 @@
-import { Briefcase, Plus, Trash2, GripVertical } from "lucide-react";
+import { Briefcase, Plus } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { WorkExperience } from "@/types/resume";
-import BulletPointInput from "./BulletPointInput";
+import SortableExperienceItem from "./SortableExperienceItem";
 
 interface ExperienceSectionProps {
   data: WorkExperience[];
@@ -12,6 +24,13 @@ interface ExperienceSectionProps {
 }
 
 const ExperienceSection = ({ data, onChange }: ExperienceSectionProps) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const addExperience = () => {
     const newExp: WorkExperience = {
       id: crypto.randomUUID(),
@@ -38,6 +57,16 @@ const ExperienceSection = ({ data, onChange }: ExperienceSectionProps) => {
 
   const removeExperience = (id: string) => {
     onChange(data.filter((exp) => exp.id !== id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = data.findIndex((item) => item.id === active.id);
+      const newIndex = data.findIndex((item) => item.id === over.id);
+      onChange(arrayMove(data, oldIndex, newIndex));
+    }
   };
 
   return (
@@ -75,130 +104,28 @@ const ExperienceSection = ({ data, onChange }: ExperienceSectionProps) => {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {data.map((exp, index) => (
-            <div
-              key={exp.id}
-              className="p-4 border border-border rounded-lg bg-card/50 space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Experience {index + 1}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={() => removeExperience(exp.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm text-muted-foreground">
-                    Job Title
-                  </Label>
-                  <Input
-                    placeholder="Software Engineer"
-                    value={exp.jobTitle}
-                    onChange={(e) =>
-                      updateExperience(exp.id, "jobTitle", e.target.value)
-                    }
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm text-muted-foreground">
-                    Company
-                  </Label>
-                  <Input
-                    placeholder="Google"
-                    value={exp.company}
-                    onChange={(e) =>
-                      updateExperience(exp.id, "company", e.target.value)
-                    }
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm text-muted-foreground">
-                    Location
-                  </Label>
-                  <Input
-                    placeholder="Mountain View, CA"
-                    value={exp.location}
-                    onChange={(e) =>
-                      updateExperience(exp.id, "location", e.target.value)
-                    }
-                    className="mt-1"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Label className="text-sm text-muted-foreground">
-                      Start Date
-                    </Label>
-                    <Input
-                      placeholder="Jan 2020"
-                      value={exp.startDate}
-                      onChange={(e) =>
-                        updateExperience(exp.id, "startDate", e.target.value)
-                      }
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm text-muted-foreground">
-                      End Date
-                    </Label>
-                    <Input
-                      placeholder="Present"
-                      value={exp.current ? "Present" : exp.endDate}
-                      onChange={(e) =>
-                        updateExperience(exp.id, "endDate", e.target.value)
-                      }
-                      disabled={exp.current}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id={`current-${exp.id}`}
-                  checked={exp.current}
-                  onCheckedChange={(checked) =>
-                    updateExperience(exp.id, "current", checked as boolean)
-                  }
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={data.map((exp) => exp.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {data.map((exp, index) => (
+                <SortableExperienceItem
+                  key={exp.id}
+                  experience={exp}
+                  index={index}
+                  onUpdate={(field, value) => updateExperience(exp.id, field, value)}
+                  onRemove={() => removeExperience(exp.id)}
                 />
-                <Label
-                  htmlFor={`current-${exp.id}`}
-                  className="text-sm text-muted-foreground cursor-pointer"
-                >
-                  I currently work here
-                </Label>
-              </div>
-
-              <BulletPointInput
-                bullets={exp.bullets}
-                onChange={(bullets) =>
-                  updateExperience(exp.id, "bullets", bullets)
-                }
-                jobTitle={exp.jobTitle}
-                company={exp.company}
-              />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );

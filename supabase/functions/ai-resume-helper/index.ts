@@ -63,6 +63,119 @@ ${companies ? `At companies: ${companies}` : ""}
 ${existingSkills ? `Already has these skills: ${existingSkills}` : ""}
 
 Suggest 8-10 additional relevant skills that would strengthen this resume. Return ONLY a comma-separated list of skills, nothing else.`;
+    } else if (type === "job-analysis") {
+      systemPrompt = `You are an expert career coach and ATS optimization specialist. Analyze job descriptions and compare them against resumes to provide actionable improvement suggestions.
+
+Focus on:
+- Missing keywords that should be added
+- Skills gaps between the resume and job requirements
+- Experience descriptions that could be reworded to match job terminology
+- ATS optimization tips
+- Specific, actionable recommendations
+
+Be specific and reference exact phrases from both the job description and resume.`;
+
+      const resumeData = context?.resumeData;
+      const jobDescription = context?.jobDescription;
+      
+      userPrompt = `Analyze this job posting and compare it to the candidate's resume. Provide specific improvement suggestions.
+
+JOB DESCRIPTION:
+${jobDescription}
+
+CANDIDATE'S RESUME:
+Name: ${resumeData?.personalInfo?.fullName || "Not provided"}
+Summary: ${resumeData?.summary || "Not provided"}
+Experience: ${resumeData?.experience?.map((e: { jobTitle: string; company: string; bullets: string[] }) => `${e.jobTitle} at ${e.company}: ${e.bullets?.join("; ")}`).join("\n") || "Not provided"}
+Skills: ${resumeData?.skills?.join(", ") || "Not provided"}
+
+Provide your analysis in this JSON format:
+{
+  "matchScore": <number 0-100>,
+  "missingKeywords": ["keyword1", "keyword2"],
+  "skillsToAdd": ["skill1", "skill2"],
+  "bulletImprovements": [{"original": "original text", "suggestion": "improved text"}],
+  "summaryTips": ["tip1", "tip2"],
+  "overallTips": ["tip1", "tip2"]
+}`;
+    } else if (type === "cover-letter") {
+      systemPrompt = `You are an expert cover letter writer. Create compelling, personalized cover letters that:
+- Open with a strong hook that shows genuine interest
+- Connect the candidate's experience to the job requirements
+- Use specific examples and achievements from their resume
+- Maintain a professional but personable tone
+- Include a strong call to action
+- Are concise (3-4 paragraphs)
+- Are ATS-friendly`;
+
+      const resumeData = context?.resumeData;
+      const jobDescription = context?.jobDescription;
+      const companyName = context?.companyName || "the company";
+      const jobTitle = context?.jobTitle || "the position";
+      
+      userPrompt = `Write a cover letter for this candidate applying to ${companyName} for the ${jobTitle} position.
+
+JOB DESCRIPTION:
+${jobDescription}
+
+CANDIDATE'S RESUME:
+Name: ${resumeData?.personalInfo?.fullName || "Candidate"}
+Email: ${resumeData?.personalInfo?.email || ""}
+Phone: ${resumeData?.personalInfo?.phone || ""}
+Summary: ${resumeData?.summary || "Not provided"}
+Experience: ${resumeData?.experience?.map((e: { jobTitle: string; company: string; startDate: string; endDate: string; current: boolean; bullets: string[] }) => `${e.jobTitle} at ${e.company} (${e.startDate} - ${e.current ? "Present" : e.endDate}): ${e.bullets?.join("; ")}`).join("\n") || "Not provided"}
+Education: ${resumeData?.education?.map((e: { degree: string; institution: string }) => `${e.degree} from ${e.institution}`).join(", ") || "Not provided"}
+Skills: ${resumeData?.skills?.join(", ") || "Not provided"}
+
+Write only the cover letter content (no headers or signature block). Make it compelling and specific to this role.`;
+    } else if (type === "parse-resume") {
+      systemPrompt = `You are an expert resume parser. Extract structured data from resume text.
+Be thorough and extract all relevant information.
+For dates, use formats like "Jan 2020" or "2020".
+For bullets, extract each achievement or responsibility as a separate item.
+If information is unclear or missing, use empty strings or empty arrays.`;
+
+      const resumeText = context?.resumeText;
+      
+      userPrompt = `Parse this resume text and extract structured data.
+
+RESUME TEXT:
+${resumeText}
+
+Return the data in this exact JSON format:
+{
+  "personalInfo": {
+    "fullName": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "linkedin": "",
+    "website": ""
+  },
+  "summary": "",
+  "experience": [
+    {
+      "jobTitle": "",
+      "company": "",
+      "location": "",
+      "startDate": "",
+      "endDate": "",
+      "current": false,
+      "bullets": []
+    }
+  ],
+  "education": [
+    {
+      "degree": "",
+      "institution": "",
+      "location": "",
+      "graduationDate": "",
+      "gpa": "",
+      "description": ""
+    }
+  ],
+  "skills": []
+}`;
     }
 
     console.log(`Processing ${type} request...`);
@@ -79,8 +192,8 @@ Suggest 8-10 additional relevant skills that would strengthen this resume. Retur
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: 300,
-        temperature: 0.7,
+        max_tokens: type === "cover-letter" ? 1000 : type === "job-analysis" || type === "parse-resume" ? 2000 : 300,
+        temperature: type === "parse-resume" ? 0.3 : 0.7,
       }),
     });
 
@@ -112,6 +225,24 @@ Suggest 8-10 additional relevant skills that would strengthen this resume. Retur
     }
 
     console.log(`Successfully generated ${type} suggestion`);
+
+    // For job-analysis and parse-resume, try to parse as JSON
+    if (type === "job-analysis" || type === "parse-resume") {
+      try {
+        // Extract JSON from the response (it might be wrapped in markdown)
+        const jsonMatch = suggestion.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return new Response(
+            JSON.stringify({ suggestion: parsed }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } catch (parseError) {
+        console.error("Failed to parse JSON response:", parseError);
+        // Fall through to return raw suggestion
+      }
+    }
 
     return new Response(
       JSON.stringify({ suggestion }),

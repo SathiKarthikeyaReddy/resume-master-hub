@@ -20,6 +20,9 @@ import ModernTemplate from "@/components/editor/templates/ModernTemplate";
 import MinimalTemplate from "@/components/editor/templates/MinimalTemplate";
 import CreativeTemplate from "@/components/editor/templates/CreativeTemplate";
 import ExecutiveTemplate from "@/components/editor/templates/ExecutiveTemplate";
+import JobAnalyzer from "@/components/editor/JobAnalyzer";
+import CoverLetterGenerator from "@/components/editor/CoverLetterGenerator";
+import ResumeImport from "@/components/editor/ResumeImport";
 import SaveIndicator from "@/components/SaveIndicator";
 import { ResumeData, defaultResumeData } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -150,6 +153,27 @@ const ResumeEditor = () => {
     setResumeData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleImportResume = (importedData: Partial<ResumeData>) => {
+    setResumeData((prev) => ({
+      ...prev,
+      personalInfo: { ...prev.personalInfo, ...importedData.personalInfo },
+      summary: importedData.summary || prev.summary,
+      experience: importedData.experience?.length ? importedData.experience : prev.experience,
+      education: importedData.education?.length ? importedData.education : prev.education,
+      skills: importedData.skills?.length ? importedData.skills : prev.skills,
+    }));
+  };
+
+  const handleAddSkillFromAnalysis = (skill: string) => {
+    if (!resumeData.skills.includes(skill)) {
+      updateResumeData("skills", [...resumeData.skills, skill]);
+      toast({
+        title: "Skill added",
+        description: `"${skill}" has been added to your skills.`,
+      });
+    }
+  };
+
   const handleGoPro = () => {
     setIsPro(!isPro);
     toast({
@@ -224,8 +248,16 @@ const ResumeEditor = () => {
           >
             <ScrollArea className="h-full">
               <div className="p-6 pb-24 lg:pb-6">
-                {/* Go Pro Button & Promo Carousel */}
-                <div className="flex justify-end mb-4">
+                {/* Top Actions Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    <ResumeImport onImport={handleImportResume} />
+                    <JobAnalyzer 
+                      resumeData={resumeData} 
+                      onAddSkill={handleAddSkillFromAnalysis}
+                    />
+                    <CoverLetterGenerator resumeData={resumeData} />
+                  </div>
                   <GoProButton isPro={isPro} onToggle={handleGoPro} />
                 </div>
 

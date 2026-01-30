@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Eye, Edit3, Save, Download } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
@@ -23,11 +23,13 @@ import ExecutiveTemplate from "@/components/editor/templates/ExecutiveTemplate";
 import JobAnalyzer from "@/components/editor/JobAnalyzer";
 import CoverLetterGenerator from "@/components/editor/CoverLetterGenerator";
 import ResumeImport from "@/components/editor/ResumeImport";
+import CollaboratorPresence from "@/components/editor/CollaboratorPresence";
 import SaveIndicator from "@/components/SaveIndicator";
 import { ResumeData, defaultResumeData } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useResumeAutoSave } from "@/hooks/useResumeAutoSave";
 import { useResumeStrength } from "@/hooks/useResumeStrength";
+import { useResumeCollaboration } from "@/hooks/useResumeCollaboration";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -51,6 +53,17 @@ const ResumeEditor = () => {
   });
 
   const strength = useResumeStrength(resumeData);
+
+  // Handle remote updates from collaborators
+  const handleRemoteUpdate = useCallback((data: ResumeData) => {
+    setResumeData(data);
+  }, []);
+
+  const { collaborators, isConnected, broadcastUpdate } = useResumeCollaboration({
+    resumeId,
+    resumeData,
+    onRemoteUpdate: handleRemoteUpdate,
+  });
 
   const handlePrint = useReactToPrint({
     contentRef: resumeRef,
@@ -150,7 +163,12 @@ const ResumeEditor = () => {
     key: K,
     value: ResumeData[K]
   ) => {
-    setResumeData((prev) => ({ ...prev, [key]: value }));
+    setResumeData((prev) => {
+      const newData = { ...prev, [key]: value };
+      // Broadcast changes to collaborators
+      broadcastUpdate(newData);
+      return newData;
+    });
   };
 
   const handleImportResume = (importedData: Partial<ResumeData>) => {
@@ -249,14 +267,22 @@ const ResumeEditor = () => {
             <ScrollArea className="h-full">
               <div className="p-6 pb-24 lg:pb-6">
                 {/* Top Actions Bar */}
+                {/* Collaborator Presence & Actions Bar */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                  <div className="flex flex-wrap gap-2">
-                    <ResumeImport onImport={handleImportResume} />
-                    <JobAnalyzer 
-                      resumeData={resumeData} 
-                      onAddSkill={handleAddSkillFromAnalysis}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <CollaboratorPresence 
+                      collaborators={collaborators} 
+                      isConnected={isConnected} 
                     />
-                    <CoverLetterGenerator resumeData={resumeData} />
+                    <div className="h-4 w-px bg-border hidden sm:block" />
+                    <div className="flex flex-wrap gap-2">
+                      <ResumeImport onImport={handleImportResume} />
+                      <JobAnalyzer 
+                        resumeData={resumeData} 
+                        onAddSkill={handleAddSkillFromAnalysis}
+                      />
+                      <CoverLetterGenerator resumeData={resumeData} />
+                    </div>
                   </div>
                   <GoProButton isPro={isPro} onToggle={handleGoPro} />
                 </div>

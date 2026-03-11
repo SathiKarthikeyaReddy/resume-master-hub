@@ -71,12 +71,14 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
                 </a>
               </>
             ) : !isEditor && user ? (
-              <Link
-                to="/dashboard"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Dashboard
+                </Link>
+                <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Settings
+                </Link>
+              </>
             ) : null}
           </div>
 

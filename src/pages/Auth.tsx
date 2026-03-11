@@ -239,6 +239,31 @@ const Auth = () => {
                 )}
               </div>
 
+              {isLogin && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!email) {
+                        toast({ title: "Enter your email", description: "Please enter your email address first.", variant: "destructive" });
+                        return;
+                      }
+                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      });
+                      if (error) {
+                        toast({ title: "Error", description: error.message, variant: "destructive" });
+                      } else {
+                        toast({ title: "Reset email sent", description: "Check your inbox for the password reset link." });
+                      }
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 variant="hero"

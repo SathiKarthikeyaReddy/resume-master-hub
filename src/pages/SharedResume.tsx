@@ -20,10 +20,9 @@ const SharedResume = () => {
     const load = async () => {
       if (!slug) { setError("Invalid link"); setIsLoading(false); return; }
 
-      // Get shared resume record
-      const { data: shared, error: shareErr } = await supabase
+      const { data: shared, error: shareErr } = await (supabase as any)
         .from("shared_resumes")
-        .select("resume_id, is_active")
+        .select("resume_id, is_active, view_count")
         .eq("slug", slug)
         .maybeSingle();
 
@@ -33,23 +32,11 @@ const SharedResume = () => {
         return;
       }
 
-      // Increment view count via edge function or direct update
-      await supabase.from("shared_resumes").update({
-        view_count: undefined, // we'll use RPC
-      }).eq("slug", slug);
-
-      // Increment view - use raw SQL would be better but we'll do a simple approach
-      const { data: currentShare } = await supabase
+      // Increment view count
+      await (supabase as any)
         .from("shared_resumes")
-        .select("view_count")
-        .eq("slug", slug)
-        .single();
-
-      if (currentShare) {
-        await supabase.from("shared_resumes").update({
-          view_count: (currentShare.view_count || 0) + 1,
-        }).eq("slug", slug);
-      }
+        .update({ view_count: (shared.view_count || 0) + 1 })
+        .eq("slug", slug);
 
       // Get resume content
       const { data: resume, error: resumeErr } = await supabase

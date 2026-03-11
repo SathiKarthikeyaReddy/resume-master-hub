@@ -29,7 +29,7 @@ const ShareResumeDialog = ({ resumeId, open, onOpenChange }: ShareResumeDialogPr
   }, [open, resumeId]);
 
   const loadShareStatus = async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("shared_resumes")
       .select("*")
       .eq("resume_id", resumeId)
@@ -50,12 +50,11 @@ const ShareResumeDialog = ({ resumeId, open, onOpenChange }: ShareResumeDialogPr
     setIsLoading(true);
     try {
       if (!isPublic) {
-        // Enable sharing
         const slug = crypto.randomUUID().slice(0, 8);
         const { data: user } = await supabase.auth.getUser();
         if (!user.user) return;
 
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("shared_resumes")
           .upsert({
             resume_id: resumeId,
@@ -69,8 +68,7 @@ const ShareResumeDialog = ({ resumeId, open, onOpenChange }: ShareResumeDialogPr
         setIsPublic(true);
         toast({ title: "Sharing enabled", description: "Your resume is now publicly accessible." });
       } else {
-        // Disable sharing
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("shared_resumes")
           .update({ is_active: false })
           .eq("resume_id", resumeId);

@@ -24,12 +24,14 @@ import JobAnalyzer from "@/components/editor/JobAnalyzer";
 import CoverLetterGenerator from "@/components/editor/CoverLetterGenerator";
 import ResumeImport from "@/components/editor/ResumeImport";
 import CollaboratorPresence from "@/components/editor/CollaboratorPresence";
+import VersionHistory from "@/components/editor/VersionHistory";
 import SaveIndicator from "@/components/SaveIndicator";
 import { ResumeData, defaultResumeData } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useResumeAutoSave } from "@/hooks/useResumeAutoSave";
 import { useResumeStrength } from "@/hooks/useResumeStrength";
 import { useResumeCollaboration } from "@/hooks/useResumeCollaboration";
+import { useResumeVersions } from "@/hooks/useResumeVersions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,6 +55,7 @@ const ResumeEditor = () => {
   });
 
   const strength = useResumeStrength(resumeData);
+  const { versions, isLoading: versionsLoading, fetchVersions, restoreVersion } = useResumeVersions(resumeId);
 
   // Handle remote updates from collaborators
   const handleRemoteUpdate = useCallback((data: ResumeData) => {
@@ -282,6 +285,16 @@ const ResumeEditor = () => {
                         onAddSkill={handleAddSkillFromAnalysis}
                       />
                       <CoverLetterGenerator resumeData={resumeData} />
+                      <VersionHistory
+                        versions={versions}
+                        isLoading={versionsLoading}
+                        onOpen={fetchVersions}
+                        onRestore={async (v) => {
+                          const restored = await restoreVersion(v);
+                          if (restored) setResumeData(restored);
+                          return restored;
+                        }}
+                      />
                     </div>
                   </div>
                   <GoProButton isPro={isPro} onToggle={handleGoPro} />

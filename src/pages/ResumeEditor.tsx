@@ -24,6 +24,7 @@ import JobAnalyzer from "@/components/editor/JobAnalyzer";
 import CoverLetterGenerator from "@/components/editor/CoverLetterGenerator";
 import ResumeImport from "@/components/editor/ResumeImport";
 import CollaboratorPresence from "@/components/editor/CollaboratorPresence";
+import VersionHistory from "@/components/editor/VersionHistory";
 import SaveIndicator from "@/components/SaveIndicator";
 import { ResumeData, defaultResumeData } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";

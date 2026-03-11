@@ -55,6 +55,7 @@ const ResumeEditor = () => {
   });
 
   const strength = useResumeStrength(resumeData);
+  const { versions, isLoading: versionsLoading, fetchVersions, restoreVersion } = useResumeVersions(resumeId);
 
   // Handle remote updates from collaborators
   const handleRemoteUpdate = useCallback((data: ResumeData) => {

@@ -31,6 +31,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useResumeAutoSave } from "@/hooks/useResumeAutoSave";
 import { useResumeStrength } from "@/hooks/useResumeStrength";
 import { useResumeCollaboration } from "@/hooks/useResumeCollaboration";
+import { useResumeVersions } from "@/hooks/useResumeVersions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 

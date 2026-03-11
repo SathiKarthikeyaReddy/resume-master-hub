@@ -133,6 +133,47 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_resumes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          resume_id: string
+          slug: string
+          updated_at: string
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          resume_id: string
+          slug: string
+          updated_at?: string
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          resume_id?: string
+          slug?: string
+          updated_at?: string
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_resumes_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: true
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

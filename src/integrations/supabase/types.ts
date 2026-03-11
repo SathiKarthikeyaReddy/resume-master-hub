@@ -71,6 +71,41 @@ export type Database = {
         }
         Relationships: []
       }
+      resume_versions: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          resume_id: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          id?: string
+          resume_id: string
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          resume_id?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_versions_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resumes: {
         Row: {
           content: Json | null

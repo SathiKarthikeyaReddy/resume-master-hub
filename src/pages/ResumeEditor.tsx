@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Eye, Edit3, Save, Download } from "lucide-react";
+import { Eye, Edit3, Save, Download, Share2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 import Navbar from "@/components/Navbar";
@@ -12,6 +12,11 @@ import SummarySection from "@/components/editor/SummarySection";
 import ExperienceSection from "@/components/editor/ExperienceSection";
 import EducationSection from "@/components/editor/EducationSection";
 import SkillsSection from "@/components/editor/SkillsSection";
+import CertificationsSection from "@/components/editor/CertificationsSection";
+import ProjectsSection from "@/components/editor/ProjectsSection";
+import LanguagesSection from "@/components/editor/LanguagesSection";
+import VolunteerSection from "@/components/editor/VolunteerSection";
+import AwardsSection from "@/components/editor/AwardsSection";
 import ResumeStrengthMeter from "@/components/editor/ResumeStrengthMeter";
 import GoProButton from "@/components/editor/GoProButton";
 import TemplateSelector, { TemplateType } from "@/components/editor/TemplateSelector";
@@ -26,7 +31,8 @@ import ResumeImport from "@/components/editor/ResumeImport";
 import CollaboratorPresence from "@/components/editor/CollaboratorPresence";
 import VersionHistory from "@/components/editor/VersionHistory";
 import SaveIndicator from "@/components/SaveIndicator";
-import { ResumeData, defaultResumeData } from "@/types/resume";
+import ShareResumeDialog from "@/components/editor/ShareResumeDialog";
+import { ResumeData, defaultResumeData, defaultSectionOrder } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useResumeAutoSave } from "@/hooks/useResumeAutoSave";
 import { useResumeStrength } from "@/hooks/useResumeStrength";
@@ -44,131 +50,75 @@ const ResumeEditor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
   const [template, setTemplate] = useState<TemplateType>("classic");
+  const [showShare, setShowShare] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const resumeRef = useRef<HTMLDivElement>(null);
 
-  const { saveStatus } = useResumeAutoSave({
-    resumeId,
-    resumeData,
-    debounceMs: 2000,
-  });
-
+  const { saveStatus } = useResumeAutoSave({ resumeId, resumeData, debounceMs: 2000 });
   const strength = useResumeStrength(resumeData);
   const { versions, isLoading: versionsLoading, fetchVersions, restoreVersion } = useResumeVersions(resumeId);
 
-  // Handle remote updates from collaborators
-  const handleRemoteUpdate = useCallback((data: ResumeData) => {
-    setResumeData(data);
-  }, []);
-
-  const { collaborators, isConnected, broadcastUpdate } = useResumeCollaboration({
-    resumeId,
-    resumeData,
-    onRemoteUpdate: handleRemoteUpdate,
-  });
+  const handleRemoteUpdate = useCallback((data: ResumeData) => { setResumeData(data); }, []);
+  const { collaborators, isConnected, broadcastUpdate } = useResumeCollaboration({ resumeId, resumeData, onRemoteUpdate: handleRemoteUpdate });
 
   const handlePrint = useReactToPrint({
     contentRef: resumeRef,
     documentTitle: resumeData.personalInfo.fullName || "Resume",
-    pageStyle: `
-      @page {
-        size: A4;
-        margin: 0;
-      }
-      @media print {
-        body {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-      }
-    `,
+    pageStyle: `@page { size: A4; margin: 0; } @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`,
   });
 
-  // Load resume data if editing existing
   useEffect(() => {
     const loadResume = async () => {
       if (id) {
-        const { data, error } = await supabase
-          .from("resumes")
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
-
+        const { data, error } = await supabase.from("resumes").select("*").eq("id", id).maybeSingle();
         if (error) {
-          console.error("Error loading resume:", error);
-          toast({
-            title: "Error loading resume",
-            description: "Could not load the resume. Please try again.",
-            variant: "destructive",
-          });
+          toast({ title: "Error loading resume", description: "Could not load the resume.", variant: "destructive" });
           navigate("/dashboard");
           return;
         }
-
         if (data?.content) {
           const content = data.content as unknown as ResumeData & { template?: TemplateType };
-          setResumeData(content);
+          // Merge with defaults to handle missing new fields
+          setResumeData({
+            ...defaultResumeData,
+            ...content,
+            personalInfo: { ...defaultResumeData.personalInfo, ...content.personalInfo },
+            sectionOrder: content.sectionOrder || defaultSectionOrder,
+          });
           setResumeId(data.id);
-          if (content.template) {
-            setTemplate(content.template);
-          }
+          if (content.template) setTemplate(content.template);
         }
       }
       setIsLoading(false);
     };
-
     loadResume();
   }, [id, navigate, toast]);
 
-  // Create new resume if none exists
   const createNewResume = async () => {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) {
-      toast({
-        title: "Please sign in",
-        description: "You need to be signed in to save your resume.",
-        variant: "destructive",
-      });
+      toast({ title: "Please sign in", description: "You need to be signed in to save your resume.", variant: "destructive" });
       return;
     }
-
     const contentWithTemplate = { ...resumeData, template };
-    const { data, error } = await supabase
-      .from("resumes")
-      .insert({
-        user_id: user.user.id,
-        title: resumeData.personalInfo.fullName || "Untitled Resume",
-        content: JSON.parse(JSON.stringify(contentWithTemplate)),
-      })
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from("resumes").insert({
+      user_id: user.user.id,
+      title: resumeData.personalInfo.fullName || "Untitled Resume",
+      content: JSON.parse(JSON.stringify(contentWithTemplate)),
+    }).select().single();
     if (error) {
-      console.error("Error creating resume:", error);
-      toast({
-        title: "Error saving resume",
-        description: "Could not save the resume. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error saving resume", description: "Could not save the resume.", variant: "destructive" });
       return;
     }
-
     setResumeId(data.id);
     navigate(`/editor/${data.id}`, { replace: true });
-    toast({
-      title: "Resume created",
-      description: "Your resume has been saved.",
-    });
+    toast({ title: "Resume created", description: "Your resume has been saved." });
   };
 
-  const updateResumeData = <K extends keyof ResumeData>(
-    key: K,
-    value: ResumeData[K]
-  ) => {
+  const updateResumeData = <K extends keyof ResumeData>(key: K, value: ResumeData[K]) => {
     setResumeData((prev) => {
       const newData = { ...prev, [key]: value };
-      // Broadcast changes to collaborators
       broadcastUpdate(newData);
       return newData;
     });
@@ -188,10 +138,7 @@ const ResumeEditor = () => {
   const handleAddSkillFromAnalysis = (skill: string) => {
     if (!resumeData.skills.includes(skill)) {
       updateResumeData("skills", [...resumeData.skills, skill]);
-      toast({
-        title: "Skill added",
-        description: `"${skill}" has been added to your skills.`,
-      });
+      toast({ title: "Skill added", description: `"${skill}" has been added to your skills.` });
     }
   };
 
@@ -199,25 +146,44 @@ const ResumeEditor = () => {
     setIsPro(!isPro);
     toast({
       title: isPro ? "Pro mode deactivated" : "Pro mode activated!",
-      description: isPro
-        ? "Ads will now be shown."
-        : "All ads have been hidden. Enjoy your clean workspace!",
+      description: isPro ? "Ads will now be shown." : "All ads have been hidden. Enjoy your clean workspace!",
     });
   };
 
   const renderTemplate = () => {
     switch (template) {
-      case "modern":
-        return <ModernTemplate data={resumeData} />;
-      case "minimal":
-        return <MinimalTemplate data={resumeData} />;
-      case "creative":
-        return <CreativeTemplate data={resumeData} />;
-      case "executive":
-        return <ExecutiveTemplate data={resumeData} />;
-      case "classic":
+      case "modern": return <ModernTemplate data={resumeData} />;
+      case "minimal": return <MinimalTemplate data={resumeData} />;
+      case "creative": return <CreativeTemplate data={resumeData} />;
+      case "executive": return <ExecutiveTemplate data={resumeData} />;
+      case "classic": default: return <ClassicTemplate data={resumeData} />;
+    }
+  };
+
+  const renderSection = (sectionKey: string) => {
+    switch (sectionKey) {
+      case "personalInfo":
+        return <PersonalInfoSection key="personalInfo" data={resumeData.personalInfo} onChange={(data) => updateResumeData("personalInfo", data)} />;
+      case "summary":
+        return <div key="summary" className="border-t border-border pt-6"><SummarySection data={resumeData.summary} onChange={(data) => updateResumeData("summary", data)} /></div>;
+      case "experience":
+        return <div key="experience" className="border-t border-border pt-6"><ExperienceSection data={resumeData.experience} onChange={(data) => updateResumeData("experience", data)} /></div>;
+      case "education":
+        return <div key="education" className="border-t border-border pt-6"><EducationSection data={resumeData.education} onChange={(data) => updateResumeData("education", data)} /></div>;
+      case "skills":
+        return <div key="skills" className="border-t border-border pt-6"><SkillsSection data={resumeData.skills} onChange={(data) => updateResumeData("skills", data)} jobTitles={resumeData.experience.map(e => e.jobTitle).filter(Boolean)} companies={resumeData.experience.map(e => e.company).filter(Boolean)} /></div>;
+      case "certifications":
+        return <div key="certifications" className="border-t border-border pt-6"><CertificationsSection data={resumeData.certifications || []} onChange={(data) => updateResumeData("certifications", data)} /></div>;
+      case "projects":
+        return <div key="projects" className="border-t border-border pt-6"><ProjectsSection data={resumeData.projects || []} onChange={(data) => updateResumeData("projects", data)} /></div>;
+      case "languages":
+        return <div key="languages" className="border-t border-border pt-6"><LanguagesSection data={resumeData.languages || []} onChange={(data) => updateResumeData("languages", data)} /></div>;
+      case "volunteer":
+        return <div key="volunteer" className="border-t border-border pt-6"><VolunteerSection data={resumeData.volunteer || []} onChange={(data) => updateResumeData("volunteer", data)} /></div>;
+      case "awards":
+        return <div key="awards" className="border-t border-border pt-6"><AwardsSection data={resumeData.awards || []} onChange={(data) => updateResumeData("awards", data)} /></div>;
       default:
-        return <ClassicTemplate data={resumeData} />;
+        return null;
     }
   };
 
@@ -229,31 +195,20 @@ const ResumeEditor = () => {
     );
   }
 
+  const sectionOrder = resumeData.sectionOrder || defaultSectionOrder;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar saveStatus={saveStatus} />
 
-      {/* Mobile View Toggle */}
       {isMobile && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
           <div className="flex items-center gap-1 p-1 bg-card border border-border rounded-full shadow-lg">
-            <Button
-              variant={activeView === "editor" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveView("editor")}
-              className="rounded-full gap-1"
-            >
-              <Edit3 className="w-4 h-4" />
-              Edit
+            <Button variant={activeView === "editor" ? "default" : "ghost"} size="sm" onClick={() => setActiveView("editor")} className="rounded-full gap-1">
+              <Edit3 className="w-4 h-4" />Edit
             </Button>
-            <Button
-              variant={activeView === "preview" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveView("preview")}
-              className="rounded-full gap-1"
-            >
-              <Eye className="w-4 h-4" />
-              Preview
+            <Button variant={activeView === "preview" ? "default" : "ghost"} size="sm" onClick={() => setActiveView("preview")} className="rounded-full gap-1">
+              <Eye className="w-4 h-4" />Preview
             </Button>
           </div>
         </div>
@@ -261,116 +216,47 @@ const ResumeEditor = () => {
 
       <main className="pt-16">
         <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
-          {/* Left Side - Editor Form */}
-          <div
-            className={`w-full lg:w-1/2 ${
-              isMobile && activeView !== "editor" ? "hidden" : ""
-            }`}
-          >
+          <div className={`w-full lg:w-1/2 ${isMobile && activeView !== "editor" ? "hidden" : ""}`}>
             <ScrollArea className="h-full">
               <div className="p-6 pb-24 lg:pb-6">
-                {/* Top Actions Bar */}
-                {/* Collaborator Presence & Actions Bar */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <CollaboratorPresence 
-                      collaborators={collaborators} 
-                      isConnected={isConnected} 
-                    />
+                    <CollaboratorPresence collaborators={collaborators} isConnected={isConnected} />
                     <div className="h-4 w-px bg-border hidden sm:block" />
                     <div className="flex flex-wrap gap-2">
                       <ResumeImport onImport={handleImportResume} />
-                      <JobAnalyzer 
-                        resumeData={resumeData} 
-                        onAddSkill={handleAddSkillFromAnalysis}
-                      />
+                      <JobAnalyzer resumeData={resumeData} onAddSkill={handleAddSkillFromAnalysis} />
                       <CoverLetterGenerator resumeData={resumeData} />
-                      <VersionHistory
-                        versions={versions}
-                        isLoading={versionsLoading}
-                        onOpen={fetchVersions}
-                        onRestore={async (v) => {
-                          const restored = await restoreVersion(v);
-                          if (restored) setResumeData(restored);
-                          return restored;
-                        }}
-                      />
+                      <VersionHistory versions={versions} isLoading={versionsLoading} onOpen={fetchVersions} onRestore={async (v) => { const restored = await restoreVersion(v); if (restored) setResumeData(restored); return restored; }} />
+                      {resumeId && (
+                        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowShare(true)}>
+                          <Share2 className="w-3.5 h-3.5" />
+                          Share
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <GoProButton isPro={isPro} onToggle={handleGoPro} />
                 </div>
 
                 {!isPro && <PromoCarousel autoPlayInterval={8000} />}
-
-                {/* Template Selector */}
                 <TemplateSelector selected={template} onChange={setTemplate} />
 
-                {/* Resume Strength Meter */}
                 <div className="mb-6">
-                  <ResumeStrengthMeter
-                    percentage={strength.percentage}
-                    label={strength.label}
-                    completedSections={strength.completedSections}
-                    missingSections={strength.missingSections}
-                  />
+                  <ResumeStrengthMeter percentage={strength.percentage} label={strength.label} completedSections={strength.completedSections} missingSections={strength.missingSections} />
                 </div>
 
-                {/* Form Sections */}
                 <div className="space-y-8">
-                  <PersonalInfoSection
-                    data={resumeData.personalInfo}
-                    onChange={(data) => updateResumeData("personalInfo", data)}
-                  />
+                  {sectionOrder.map((key) => renderSection(key))}
 
-                  <div className="border-t border-border pt-6">
-                    <SummarySection
-                      data={resumeData.summary}
-                      onChange={(data) => updateResumeData("summary", data)}
-                    />
-                  </div>
-
-                  <div className="border-t border-border pt-6">
-                    <ExperienceSection
-                      data={resumeData.experience}
-                      onChange={(data) => updateResumeData("experience", data)}
-                    />
-                  </div>
-
-                  {/* Native Ad Placement - Hidden when Pro */}
                   {!isPro && (
-                    <NativeAdCard
-                      title="Resume Review Service"
-                      description="Get expert feedback on your resume from HR professionals. First review free!"
-                      ctaText="Get Free Review"
-                    />
+                    <NativeAdCard title="Resume Review Service" description="Get expert feedback on your resume from HR professionals. First review free!" ctaText="Get Free Review" />
                   )}
 
-                  <div className="border-t border-border pt-6">
-                    <EducationSection
-                      data={resumeData.education}
-                      onChange={(data) => updateResumeData("education", data)}
-                    />
-                  </div>
-
-                  <div className="border-t border-border pt-6">
-                    <SkillsSection
-                      data={resumeData.skills}
-                      onChange={(data) => updateResumeData("skills", data)}
-                      jobTitles={resumeData.experience.map(e => e.jobTitle).filter(Boolean)}
-                      companies={resumeData.experience.map(e => e.company).filter(Boolean)}
-                    />
-                  </div>
-
-                  {/* Action Buttons */}
                   <div className="flex gap-3 pt-4">
                     {!resumeId ? (
-                      <Button
-                        variant="hero"
-                        className="flex-1 gap-2"
-                        onClick={createNewResume}
-                      >
-                        <Save className="w-4 h-4" />
-                        Save Resume
+                      <Button variant="hero" className="flex-1 gap-2" onClick={createNewResume}>
+                        <Save className="w-4 h-4" />Save Resume
                       </Button>
                     ) : (
                       <div className="flex-1 flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -378,13 +264,8 @@ const ResumeEditor = () => {
                         {saveStatus === "idle" && "Auto-save enabled"}
                       </div>
                     )}
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => handlePrint()}
-                    >
-                      <Download className="w-4 h-4" />
-                      Download PDF
+                    <Button variant="outline" className="flex-1 gap-2" onClick={() => handlePrint()}>
+                      <Download className="w-4 h-4" />Download PDF
                     </Button>
                   </div>
                 </div>
@@ -392,31 +273,23 @@ const ResumeEditor = () => {
             </ScrollArea>
           </div>
 
-          {/* Right Side - Preview */}
-          <div
-            className={`w-full lg:w-1/2 bg-muted/30 border-l border-border ${
-              isMobile && activeView !== "preview" ? "hidden" : ""
-            }`}
-          >
+          <div className={`w-full lg:w-1/2 bg-muted/30 border-l border-border ${isMobile && activeView !== "preview" ? "hidden" : ""}`}>
             <div className="sticky top-0 h-full overflow-auto p-4 lg:p-8">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-foreground">
-                  Live Preview
-                </h2>
-                <span className="text-xs text-muted-foreground px-2 py-1 bg-primary/10 rounded-full">
-                  ATS-Friendly
-                </span>
+                <h2 className="text-lg font-semibold text-foreground">Live Preview</h2>
+                <span className="text-xs text-muted-foreground px-2 py-1 bg-primary/10 rounded-full">ATS-Friendly</span>
               </div>
               <div className="transform scale-[0.7] lg:scale-[0.8] origin-top">
-                {/* Printable Resume - always white bg, black text */}
-                <div ref={resumeRef}>
-                  {renderTemplate()}
-                </div>
+                <div ref={resumeRef}>{renderTemplate()}</div>
               </div>
             </div>
           </div>
         </div>
       </main>
+
+      {resumeId && (
+        <ShareResumeDialog resumeId={resumeId} open={showShare} onOpenChange={setShowShare} />
+      )}
     </div>
   );
 };

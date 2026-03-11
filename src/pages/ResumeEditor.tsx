@@ -285,6 +285,16 @@ const ResumeEditor = () => {
                         onAddSkill={handleAddSkillFromAnalysis}
                       />
                       <CoverLetterGenerator resumeData={resumeData} />
+                      <VersionHistory
+                        versions={versions}
+                        isLoading={versionsLoading}
+                        onOpen={fetchVersions}
+                        onRestore={async (v) => {
+                          const restored = await restoreVersion(v);
+                          if (restored) setResumeData(restored);
+                          return restored;
+                        }}
+                      />
                     </div>
                   </div>
                   <GoProButton isPro={isPro} onToggle={handleGoPro} />

@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Eye, Edit3, Save, Download, Share2 } from "lucide-react";
+import { Eye, Edit3, Save, Download, Share2, FileDown } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import PromoCarousel from "@/components/editor/PromoCarousel";
 import NativeAdCard from "@/components/editor/NativeAdCard";
 import PersonalInfoSection from "@/components/editor/PersonalInfoSection";
@@ -17,9 +23,13 @@ import ProjectsSection from "@/components/editor/ProjectsSection";
 import LanguagesSection from "@/components/editor/LanguagesSection";
 import VolunteerSection from "@/components/editor/VolunteerSection";
 import AwardsSection from "@/components/editor/AwardsSection";
+import ReferencesSection from "@/components/editor/ReferencesSection";
+import CustomSectionsEditor from "@/components/editor/CustomSectionsEditor";
 import ResumeStrengthMeter from "@/components/editor/ResumeStrengthMeter";
 import GoProButton from "@/components/editor/GoProButton";
 import TemplateSelector, { TemplateType } from "@/components/editor/TemplateSelector";
+import TemplateCustomizer from "@/components/editor/TemplateCustomizer";
+import SectionReorder from "@/components/editor/SectionReorder";
 import ClassicTemplate from "@/components/editor/templates/ClassicTemplate";
 import ModernTemplate from "@/components/editor/templates/ModernTemplate";
 import MinimalTemplate from "@/components/editor/templates/MinimalTemplate";
@@ -32,7 +42,7 @@ import CollaboratorPresence from "@/components/editor/CollaboratorPresence";
 import VersionHistory from "@/components/editor/VersionHistory";
 import SaveIndicator from "@/components/SaveIndicator";
 import ShareResumeDialog from "@/components/editor/ShareResumeDialog";
-import { ResumeData, defaultResumeData, defaultSectionOrder } from "@/types/resume";
+import { ResumeData, defaultResumeData, defaultSectionOrder, defaultTemplateCustomization, TemplateCustomization } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useResumeAutoSave } from "@/hooks/useResumeAutoSave";
 import { useResumeStrength } from "@/hooks/useResumeStrength";
@@ -79,12 +89,14 @@ const ResumeEditor = () => {
         }
         if (data?.content) {
           const content = data.content as unknown as ResumeData & { template?: TemplateType };
-          // Merge with defaults to handle missing new fields
           setResumeData({
             ...defaultResumeData,
             ...content,
             personalInfo: { ...defaultResumeData.personalInfo, ...content.personalInfo },
             sectionOrder: content.sectionOrder || defaultSectionOrder,
+            references: content.references || [],
+            customSections: content.customSections || [],
+            templateCustomization: content.templateCustomization || defaultTemplateCustomization,
           });
           setResumeId(data.id);
           if (content.template) setTemplate(content.template);
@@ -150,13 +162,53 @@ const ResumeEditor = () => {
     });
   };
 
+  const handleExportTxt = () => {
+    const { personalInfo, summary, experience, education, skills } = resumeData;
+    let txt = `${personalInfo.fullName}\n${personalInfo.email} | ${personalInfo.phone} | ${personalInfo.location}\n`;
+    if (personalInfo.linkedin) txt += `LinkedIn: ${personalInfo.linkedin}\n`;
+    if (personalInfo.website) txt += `Website: ${personalInfo.website}\n`;
+    txt += `\nPROFESSIONAL SUMMARY\n${summary}\n`;
+    if (experience.length) {
+      txt += `\nWORK EXPERIENCE\n`;
+      experience.forEach((e) => {
+        txt += `\n${e.jobTitle} at ${e.company} (${e.startDate} - ${e.current ? "Present" : e.endDate})\n`;
+        e.bullets.filter((b) => b.trim()).forEach((b) => { txt += `  • ${b}\n`; });
+      });
+    }
+    if (education.length) {
+      txt += `\nEDUCATION\n`;
+      education.forEach((e) => { txt += `${e.degree} - ${e.institution} (${e.graduationDate})\n`; });
+    }
+    if (skills.length) txt += `\nSKILLS\n${skills.join(", ")}\n`;
+    const blob = new Blob([txt], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${personalInfo.fullName || "resume"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportJson = () => {
+    const blob = new Blob([JSON.stringify(resumeData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${resumeData.personalInfo.fullName || "resume"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const customization = resumeData.templateCustomization || defaultTemplateCustomization;
+
   const renderTemplate = () => {
+    const props = { data: resumeData, customization };
     switch (template) {
-      case "modern": return <ModernTemplate data={resumeData} />;
-      case "minimal": return <MinimalTemplate data={resumeData} />;
-      case "creative": return <CreativeTemplate data={resumeData} />;
-      case "executive": return <ExecutiveTemplate data={resumeData} />;
-      case "classic": default: return <ClassicTemplate data={resumeData} />;
+      case "modern": return <ModernTemplate {...props} />;
+      case "minimal": return <MinimalTemplate {...props} />;
+      case "creative": return <CreativeTemplate {...props} />;
+      case "executive": return <ExecutiveTemplate {...props} />;
+      case "classic": default: return <ClassicTemplate {...props} />;
     }
   };
 
@@ -182,6 +234,8 @@ const ResumeEditor = () => {
         return <div key="volunteer" className="border-t border-border pt-6"><VolunteerSection data={resumeData.volunteer || []} onChange={(data) => updateResumeData("volunteer", data)} /></div>;
       case "awards":
         return <div key="awards" className="border-t border-border pt-6"><AwardsSection data={resumeData.awards || []} onChange={(data) => updateResumeData("awards", data)} /></div>;
+      case "references":
+        return <ReferencesSection key="references" data={resumeData.references || []} onChange={(data) => updateResumeData("references", data)} />;
       default:
         return null;
     }
@@ -241,6 +295,14 @@ const ResumeEditor = () => {
 
                 {!isPro && <PromoCarousel autoPlayInterval={8000} />}
                 <TemplateSelector selected={template} onChange={setTemplate} />
+                <TemplateCustomizer
+                  customization={customization}
+                  onChange={(c) => updateResumeData("templateCustomization", c)}
+                />
+                <SectionReorder
+                  order={sectionOrder}
+                  onChange={(order) => updateResumeData("sectionOrder", order)}
+                />
 
                 <div className="mb-6">
                   <ResumeStrengthMeter percentage={strength.percentage} label={strength.label} completedSections={strength.completedSections} missingSections={strength.missingSections} />
@@ -248,6 +310,12 @@ const ResumeEditor = () => {
 
                 <div className="space-y-8">
                   {sectionOrder.map((key) => renderSection(key))}
+
+                  {/* Custom Sections */}
+                  <CustomSectionsEditor
+                    sections={resumeData.customSections || []}
+                    onChange={(sections) => updateResumeData("customSections", sections)}
+                  />
 
                   {!isPro && (
                     <NativeAdCard title="Resume Review Service" description="Get expert feedback on your resume from HR professionals. First review free!" ctaText="Get Free Review" />
@@ -264,9 +332,24 @@ const ResumeEditor = () => {
                         {saveStatus === "idle" && "Auto-save enabled"}
                       </div>
                     )}
-                    <Button variant="outline" className="flex-1 gap-2" onClick={() => handlePrint()}>
-                      <Download className="w-4 h-4" />Download PDF
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="flex-1 gap-2">
+                          <FileDown className="w-4 h-4" />Export
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handlePrint()}>
+                          <Download className="w-4 h-4 mr-2" />Download PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportTxt}>
+                          <FileDown className="w-4 h-4 mr-2" />Export as TXT
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportJson}>
+                          <FileDown className="w-4 h-4 mr-2" />Export as JSON
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>

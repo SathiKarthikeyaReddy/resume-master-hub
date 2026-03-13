@@ -1,4 +1,4 @@
-import { User, Mail, Phone, MapPin, Linkedin, Globe } from "lucide-react";
+import { User, Mail, Phone, MapPin, Linkedin, Globe, Camera } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PersonalInfo } from "@/types/resume";
@@ -116,6 +116,33 @@ const PersonalInfoSection = ({ data, onChange }: PersonalInfoSectionProps) => {
               className="pl-10"
             />
           </div>
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="photoUrl" className="text-sm text-muted-foreground">
+            Photo URL (optional - displays on templates with photo support)
+          </Label>
+          <div className="relative mt-1">
+            <Camera className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              id="photoUrl"
+              placeholder="https://example.com/photo.jpg"
+              value={data.photoUrl || ""}
+              onChange={(e) => handleChange("photoUrl", e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {data.photoUrl && (
+            <div className="mt-2 flex items-center gap-3">
+              <img
+                src={data.photoUrl}
+                alt="Profile preview"
+                className="w-12 h-12 rounded-full object-cover border-2 border-border"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+              <span className="text-xs text-muted-foreground">Photo preview</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

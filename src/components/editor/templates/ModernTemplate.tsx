@@ -1,25 +1,34 @@
 import { Mail, Phone, MapPin, Linkedin, Globe } from "lucide-react";
-import { ResumeData } from "@/types/resume";
-import { CertificationsBlock, ProjectsBlock, LanguagesBlock, VolunteerBlock, AwardsBlock } from "./TemplateSections";
+import { ResumeData, TemplateCustomization } from "@/types/resume";
+import { CertificationsBlock, ProjectsBlock, LanguagesBlock, VolunteerBlock, AwardsBlock, ReferencesBlock, CustomSectionsBlock } from "./TemplateSections";
 
-interface ModernTemplateProps { data: ResumeData; }
+interface ModernTemplateProps { data: ResumeData; customization?: TemplateCustomization; }
 
-const ModernTemplate = ({ data }: ModernTemplateProps) => {
+const ModernTemplate = ({ data, customization }: ModernTemplateProps) => {
   const { personalInfo, summary, experience, education, skills } = data;
+  const c = customization;
+  const headerBg = c?.primaryColor || "#1e293b";
   const hasPersonalInfo = personalInfo.fullName || personalInfo.email || personalInfo.phone || personalInfo.location;
   const hasAnyContent = hasPersonalInfo || summary || experience.length > 0 || education.length > 0 || skills.length > 0 ||
     (data.certifications?.length > 0) || (data.projects?.length > 0) || (data.languages?.length > 0) || (data.volunteer?.length > 0) || (data.awards?.length > 0);
 
   return (
     <div className="bg-white text-gray-900 min-h-[1123px] w-full max-w-[794px] mx-auto shadow-lg font-['Helvetica',_'Arial',_sans-serif] text-sm">
-      <header className="bg-slate-800 text-white p-8 pb-6">
-        <h1 className="text-3xl font-bold tracking-tight mb-3">{personalInfo.fullName || "Your Name"}</h1>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-slate-300 text-xs">
-          {personalInfo.email && <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" />{personalInfo.email}</span>}
-          {personalInfo.phone && <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" />{personalInfo.phone}</span>}
-          {personalInfo.location && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{personalInfo.location}</span>}
-          {personalInfo.linkedin && <span className="flex items-center gap-1.5"><Linkedin className="w-3.5 h-3.5" />{personalInfo.linkedin}</span>}
-          {personalInfo.website && <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{personalInfo.website}</span>}
+      <header className="text-white p-8 pb-6" style={{ backgroundColor: headerBg }}>
+        <div className="flex items-center gap-4">
+          {c?.showPhoto && personalInfo.photoUrl && (
+            <img src={personalInfo.photoUrl} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-white/30" />
+          )}
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight mb-3">{personalInfo.fullName || "Your Name"}</h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-white/70 text-xs">
+              {personalInfo.email && <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" />{personalInfo.email}</span>}
+              {personalInfo.phone && <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" />{personalInfo.phone}</span>}
+              {personalInfo.location && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{personalInfo.location}</span>}
+              {personalInfo.linkedin && <span className="flex items-center gap-1.5"><Linkedin className="w-3.5 h-3.5" />{personalInfo.linkedin}</span>}
+              {personalInfo.website && <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{personalInfo.website}</span>}
+            </div>
+          </div>
         </div>
       </header>
       <div className="p-8">
@@ -33,11 +42,11 @@ const ModernTemplate = ({ data }: ModernTemplateProps) => {
           <section className="mb-6">
             <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Experience</h2>
             {experience.map((exp) => (
-              <div key={exp.id} className="mb-4 pl-4 border-l-2 border-slate-200">
+              <div key={exp.id} className="mb-4 pl-4 border-l-2" style={{ borderColor: `${headerBg}30` }}>
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold text-sm text-slate-800">{exp.jobTitle}</h3>
-                    <p className="text-sm text-slate-600">{exp.company}</p>
+                    <p className="text-sm" style={{ color: headerBg }}>{exp.company}</p>
                   </div>
                   <span className="text-xs text-slate-500 whitespace-nowrap">{exp.startDate} – {exp.current ? "Present" : exp.endDate}</span>
                 </div>
@@ -76,17 +85,19 @@ const ModernTemplate = ({ data }: ModernTemplateProps) => {
           )}
         </div>
         <div className="mt-6">
-          <CertificationsBlock data={data} variant="modern" />
-          <ProjectsBlock data={data} variant="modern" />
-          <LanguagesBlock data={data} variant="modern" />
-          <VolunteerBlock data={data} variant="modern" />
-          <AwardsBlock data={data} variant="modern" />
+          <CertificationsBlock data={data} variant="modern" primaryColor={headerBg} />
+          <ProjectsBlock data={data} variant="modern" primaryColor={headerBg} />
+          <LanguagesBlock data={data} variant="modern" primaryColor={headerBg} />
+          <VolunteerBlock data={data} variant="modern" primaryColor={headerBg} />
+          <AwardsBlock data={data} variant="modern" primaryColor={headerBg} />
+          <ReferencesBlock data={data} variant="modern" primaryColor={headerBg} />
+          <CustomSectionsBlock data={data} variant="modern" primaryColor={headerBg} />
         </div>
       </div>
       {!hasAnyContent && (
         <div className="text-center text-gray-400 py-20 px-8">
           <p className="text-lg mb-2">Your resume preview will appear here</p>
-          <p className="text-sm">Start filling out the form on the left to see your resume take shape</p>
+          <p className="text-sm">Start filling out the form on the left</p>
         </div>
       )}
     </div>

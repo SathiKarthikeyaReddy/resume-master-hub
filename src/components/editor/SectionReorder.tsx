@@ -30,6 +30,7 @@ const sectionLabels: Record<ResumeSectionKey, string> = {
   languages: "Languages",
   volunteer: "Volunteer",
   awards: "Awards",
+  references: "References",
 };
 
 interface SortableSectionItemProps {

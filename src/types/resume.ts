@@ -5,6 +5,7 @@ export interface PersonalInfo {
   location: string;
   linkedin?: string;
   website?: string;
+  photoUrl?: string;
 }
 
 export interface WorkExperience {
@@ -73,6 +74,30 @@ export interface Award {
   description?: string;
 }
 
+export interface Reference {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  email: string;
+  phone: string;
+  relationship: string;
+}
+
+export interface CustomSection {
+  id: string;
+  title: string;
+  items: { id: string; heading: string; subheading: string; description: string }[];
+}
+
+export interface TemplateCustomization {
+  primaryColor: string;
+  fontFamily: "serif" | "sans-serif" | "mono";
+  fontSize: "small" | "medium" | "large";
+  lineSpacing: "compact" | "normal" | "relaxed";
+  showPhoto: boolean;
+}
+
 export type ResumeSectionKey =
   | "personalInfo"
   | "summary"
@@ -83,7 +108,8 @@ export type ResumeSectionKey =
   | "projects"
   | "languages"
   | "volunteer"
-  | "awards";
+  | "awards"
+  | "references";
 
 export interface ResumeData {
   personalInfo: PersonalInfo;
@@ -96,7 +122,10 @@ export interface ResumeData {
   languages: Language[];
   volunteer: VolunteerExperience[];
   awards: Award[];
+  references: Reference[];
+  customSections: CustomSection[];
   sectionOrder: ResumeSectionKey[];
+  templateCustomization?: TemplateCustomization;
 }
 
 export const defaultSectionOrder: ResumeSectionKey[] = [
@@ -110,7 +139,16 @@ export const defaultSectionOrder: ResumeSectionKey[] = [
   "languages",
   "volunteer",
   "awards",
+  "references",
 ];
+
+export const defaultTemplateCustomization: TemplateCustomization = {
+  primaryColor: "#0f766e",
+  fontFamily: "serif",
+  fontSize: "medium",
+  lineSpacing: "normal",
+  showPhoto: false,
+};
 
 export const defaultResumeData: ResumeData = {
   personalInfo: {
@@ -120,6 +158,7 @@ export const defaultResumeData: ResumeData = {
     location: "",
     linkedin: "",
     website: "",
+    photoUrl: "",
   },
   summary: "",
   experience: [],
@@ -130,5 +169,8 @@ export const defaultResumeData: ResumeData = {
   languages: [],
   volunteer: [],
   awards: [],
+  references: [],
+  customSections: [],
   sectionOrder: defaultSectionOrder,
+  templateCustomization: defaultTemplateCustomization,
 };

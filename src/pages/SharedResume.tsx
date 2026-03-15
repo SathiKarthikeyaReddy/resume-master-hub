@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ResumeData, defaultResumeData, defaultSectionOrder } from "@/types/resume";
+import { ResumeData, defaultResumeData, defaultSectionOrder, defaultTemplateCustomization } from "@/types/resume";
 import ClassicTemplate from "@/components/editor/templates/ClassicTemplate";
 import ModernTemplate from "@/components/editor/templates/ModernTemplate";
 import MinimalTemplate from "@/components/editor/templates/MinimalTemplate";
@@ -20,20 +20,23 @@ const SharedResume = () => {
     const load = async () => {
       if (!slug) { setError("Invalid link"); setIsLoading(false); return; }
 
-      const { data: shared, error: shareErr } = await (supabase as any)
+      // Use .select with specific columns that exist in the type
+      const { data: sharedRows, error: shareErr } = await supabase
         .from("shared_resumes")
         .select("resume_id, is_active, view_count")
         .eq("slug", slug)
-        .maybeSingle();
+        .eq("is_active", true);
 
-      if (shareErr || !shared || !shared.is_active) {
+      if (shareErr || !sharedRows || sharedRows.length === 0) {
         setError("This resume is not available or the link has expired.");
         setIsLoading(false);
         return;
       }
 
+      const shared = sharedRows[0];
+
       // Increment view count
-      await (supabase as any)
+      await supabase
         .from("shared_resumes")
         .update({ view_count: (shared.view_count || 0) + 1 })
         .eq("slug", slug);
@@ -57,6 +60,9 @@ const SharedResume = () => {
         ...content,
         personalInfo: { ...defaultResumeData.personalInfo, ...content.personalInfo },
         sectionOrder: content.sectionOrder || defaultSectionOrder,
+        references: content.references || [],
+        customSections: content.customSections || [],
+        templateCustomization: content.templateCustomization || defaultTemplateCustomization,
       });
       if (content.template) setTemplate(content.template);
       setIsLoading(false);
@@ -84,13 +90,16 @@ const SharedResume = () => {
     );
   }
 
+  const customization = resumeData.templateCustomization || defaultTemplateCustomization;
+
   const renderTemplate = () => {
+    const props = { data: resumeData, customization };
     switch (template) {
-      case "modern": return <ModernTemplate data={resumeData} />;
-      case "minimal": return <MinimalTemplate data={resumeData} />;
-      case "creative": return <CreativeTemplate data={resumeData} />;
-      case "executive": return <ExecutiveTemplate data={resumeData} />;
-      case "classic": default: return <ClassicTemplate data={resumeData} />;
+      case "modern": return <ModernTemplate {...props} />;
+      case "minimal": return <MinimalTemplate {...props} />;
+      case "creative": return <CreativeTemplate {...props} />;
+      case "executive": return <ExecutiveTemplate {...props} />;
+      case "classic": default: return <ClassicTemplate {...props} />;
     }
   };
 

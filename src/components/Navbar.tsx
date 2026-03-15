@@ -57,51 +57,27 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
           <div className="hidden md:flex items-center gap-6">
             {isLanding && !user ? (
               <>
-                <a
-                  href="#features"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Features
-                </a>
-                <a
-                  href="#how-it-works"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  How It Works
-                </a>
+                <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
+                <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How It Works</a>
               </>
-            ) : !isEditor && user ? (
+            ) : user ? (
               <>
-                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Dashboard
-                </Link>
-                <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Settings
-                </Link>
+                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
+                <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors">Settings</Link>
               </>
             ) : null}
           </div>
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-3">
-            {/* Save Status on mobile */}
             {isEditor && saveStatus && (
               <div className="md:hidden">
                 <SaveIndicator status={saveStatus} />
               </div>
             )}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleDarkMode}
-              className="rounded-full"
-            >
-              {isDark ? (
-                <Sun className="w-5 h-5" />
-              ) : (
-                <Moon className="w-5 h-5" />
-              )}
+            <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="rounded-full">
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
 
             <div className="hidden md:flex items-center gap-3">
@@ -133,17 +109,8 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
             </div>
 
             {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
+            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
           </div>
         </div>
@@ -153,43 +120,26 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
           <div className="md:hidden py-4 border-t border-border/50 animate-fade-up">
             <div className="flex flex-col gap-3">
               {user ? (
-                <>
-                  {isEditor ? (
-                    <div className="px-4">
-                      <Button variant="hero-outline" asChild className="w-full">
-                        <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="px-4 flex flex-col gap-2">
-                      <Button variant="hero" asChild className="w-full">
-                        <Link to="/editor" onClick={() => setIsMenuOpen(false)}>New Resume</Link>
-                      </Button>
-                      <Button variant="ghost" onClick={handleSignOut} className="w-full">
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
-                      </Button>
-                    </div>
-                  )}
-                </>
+                <div className="px-4 flex flex-col gap-2">
+                  <Button variant="hero" asChild className="w-full">
+                    <Link to="/editor" onClick={() => setIsMenuOpen(false)}>New Resume</Link>
+                  </Button>
+                  <Button variant="hero-outline" asChild className="w-full">
+                    <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link to="/settings" onClick={() => setIsMenuOpen(false)}>Settings</Link>
+                  </Button>
+                  <Button variant="ghost" onClick={() => { handleSignOut(); setIsMenuOpen(false); }} className="w-full">
+                    <LogOut className="w-4 h-4 mr-2" />Sign Out
+                  </Button>
+                </div>
               ) : (
                 <>
                   {isLanding && (
                     <>
-                      <a
-                        href="#features"
-                        className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Features
-                      </a>
-                      <a
-                        href="#how-it-works"
-                        className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        How It Works
-                      </a>
+                      <a href="#features" className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setIsMenuOpen(false)}>Features</a>
+                      <a href="#how-it-works" className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setIsMenuOpen(false)}>How It Works</a>
                     </>
                   )}
                   <div className="px-4 pt-2 flex flex-col gap-2">

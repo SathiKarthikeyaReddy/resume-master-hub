@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, MoreVertical, Clock, Trash2, Copy, Download, Pencil } from "lucide-react";
+import { FileText, MoreVertical, Clock, Trash2, Copy, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,9 +101,6 @@ const ResumeCard = ({ id, title, lastEdited, template = "modern", onDelete, onDu
                   <Copy className="w-4 h-4 mr-2" />Duplicate
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem>
-                <Download className="w-4 h-4 mr-2" />Download PDF
-              </DropdownMenuItem>
               {onDelete && (
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.preventDefault(); onDelete(); }}>
                   <Trash2 className="w-4 h-4 mr-2" />Delete

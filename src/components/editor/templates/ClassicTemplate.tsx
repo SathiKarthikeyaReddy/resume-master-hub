@@ -1,5 +1,5 @@
 import { Mail, Phone, MapPin, Linkedin, Globe } from "lucide-react";
-import { ResumeData, TemplateCustomization } from "@/types/resume";
+import { ResumeData, TemplateCustomization, ResumeSectionKey } from "@/types/resume";
 import { CertificationsBlock, ProjectsBlock, LanguagesBlock, VolunteerBlock, AwardsBlock, ReferencesBlock, CustomSectionsBlock } from "./TemplateSections";
 
 interface ClassicTemplateProps {
@@ -39,6 +39,85 @@ const ClassicTemplate = ({ data, customization }: ClassicTemplateProps) => {
     lineHeight: lineHeightMap[c.lineSpacing],
   };
 
+  const headingStyle = { fontSize: fontSizeMap[c.fontSize].heading, borderBottom: `1px solid ${c.primaryColor}30`, color: c.primaryColor };
+
+  const renderSection = (key: ResumeSectionKey) => {
+    switch (key) {
+      case "personalInfo":
+        return null; // Rendered as header
+      case "summary":
+        if (!summary) return null;
+        return (
+          <section key="summary" className="mb-5">
+            <h2 className="font-bold uppercase tracking-wider pb-1 mb-2" style={headingStyle}>Professional Summary</h2>
+            <p className="text-gray-700">{summary}</p>
+          </section>
+        );
+      case "experience":
+        if (experience.length === 0) return null;
+        return (
+          <section key="experience" className="mb-5">
+            <h2 className="font-bold uppercase tracking-wider pb-1 mb-2" style={headingStyle}>Work Experience</h2>
+            {experience.map((exp) => (
+              <div key={exp.id} className="mb-3">
+                <div className="flex justify-between items-baseline">
+                  <h3 className="font-semibold" style={{ fontSize: fontSizeMap[c.fontSize].heading }}>{exp.jobTitle}</h3>
+                  <span className="text-gray-500" style={{ fontSize: "11px" }}>{exp.startDate} – {exp.current ? "Present" : exp.endDate}</span>
+                </div>
+                <div className="text-gray-600 mb-1" style={{ fontSize: "11px" }}>{exp.company}{exp.location && `, ${exp.location}`}</div>
+                {exp.bullets?.length > 0 && (
+                  <ul className="text-gray-700 list-disc list-inside space-y-0.5">
+                    {exp.bullets.filter(b => b.trim()).map((bullet, idx) => <li key={idx}>{bullet}</li>)}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </section>
+        );
+      case "education":
+        if (education.length === 0) return null;
+        return (
+          <section key="education" className="mb-5">
+            <h2 className="font-bold uppercase tracking-wider pb-1 mb-2" style={headingStyle}>Education</h2>
+            {education.map((edu) => (
+              <div key={edu.id} className="mb-3">
+                <div className="flex justify-between items-baseline">
+                  <h3 className="font-semibold" style={{ fontSize: fontSizeMap[c.fontSize].heading }}>{edu.degree}</h3>
+                  <span className="text-gray-500" style={{ fontSize: "11px" }}>{edu.graduationDate}</span>
+                </div>
+                <div className="text-gray-600" style={{ fontSize: "11px" }}>{edu.institution}{edu.location && `, ${edu.location}`}{edu.gpa && ` • GPA: ${edu.gpa}`}</div>
+                {edu.description && <p className="text-gray-700 mt-1">{edu.description}</p>}
+              </div>
+            ))}
+          </section>
+        );
+      case "skills":
+        if (skills.length === 0) return null;
+        return (
+          <section key="skills" className="mb-5">
+            <h2 className="font-bold uppercase tracking-wider pb-1 mb-2" style={headingStyle}>Skills</h2>
+            <p className="text-gray-700">{skills.join(" • ")}</p>
+          </section>
+        );
+      case "certifications":
+        return <CertificationsBlock key="certifications" data={data} variant="classic" primaryColor={c.primaryColor} />;
+      case "projects":
+        return <ProjectsBlock key="projects" data={data} variant="classic" primaryColor={c.primaryColor} />;
+      case "languages":
+        return <LanguagesBlock key="languages" data={data} variant="classic" primaryColor={c.primaryColor} />;
+      case "volunteer":
+        return <VolunteerBlock key="volunteer" data={data} variant="classic" primaryColor={c.primaryColor} />;
+      case "awards":
+        return <AwardsBlock key="awards" data={data} variant="classic" primaryColor={c.primaryColor} />;
+      case "references":
+        return <ReferencesBlock key="references" data={data} variant="classic" primaryColor={c.primaryColor} />;
+      default:
+        return null;
+    }
+  };
+
+  const sectionOrder = data.sectionOrder || ["personalInfo", "summary", "experience", "education", "skills", "certifications", "projects", "languages", "volunteer", "awards", "references"];
+
   return (
     <div className="bg-white text-gray-900 p-8 min-h-[1123px] w-full max-w-[794px] mx-auto shadow-lg" style={style}>
       <header className="text-center mb-6 pb-4" style={{ borderBottom: `2px solid ${c.primaryColor}20` }}>
@@ -61,62 +140,7 @@ const ClassicTemplate = ({ data, customization }: ClassicTemplateProps) => {
         </div>
       </header>
 
-      {summary && (
-        <section className="mb-5">
-          <h2 className="font-bold uppercase tracking-wider pb-1 mb-2" style={{ fontSize: fontSizeMap[c.fontSize].heading, borderBottom: `1px solid ${c.primaryColor}30`, color: c.primaryColor }}>Professional Summary</h2>
-          <p className="text-gray-700">{summary}</p>
-        </section>
-      )}
-
-      {experience.length > 0 && (
-        <section className="mb-5">
-          <h2 className="font-bold uppercase tracking-wider pb-1 mb-2" style={{ fontSize: fontSizeMap[c.fontSize].heading, borderBottom: `1px solid ${c.primaryColor}30`, color: c.primaryColor }}>Work Experience</h2>
-          {experience.map((exp) => (
-            <div key={exp.id} className="mb-3">
-              <div className="flex justify-between items-baseline">
-                <h3 className="font-semibold" style={{ fontSize: fontSizeMap[c.fontSize].heading }}>{exp.jobTitle}</h3>
-                <span className="text-gray-500" style={{ fontSize: "11px" }}>{exp.startDate} – {exp.current ? "Present" : exp.endDate}</span>
-              </div>
-              <div className="text-gray-600 mb-1" style={{ fontSize: "11px" }}>{exp.company}{exp.location && `, ${exp.location}`}</div>
-              {exp.bullets?.length > 0 && (
-                <ul className="text-gray-700 list-disc list-inside space-y-0.5">
-                  {exp.bullets.filter(b => b.trim()).map((bullet, idx) => <li key={idx}>{bullet}</li>)}
-                </ul>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
-
-      {education.length > 0 && (
-        <section className="mb-5">
-          <h2 className="font-bold uppercase tracking-wider pb-1 mb-2" style={{ fontSize: fontSizeMap[c.fontSize].heading, borderBottom: `1px solid ${c.primaryColor}30`, color: c.primaryColor }}>Education</h2>
-          {education.map((edu) => (
-            <div key={edu.id} className="mb-3">
-              <div className="flex justify-between items-baseline">
-                <h3 className="font-semibold" style={{ fontSize: fontSizeMap[c.fontSize].heading }}>{edu.degree}</h3>
-                <span className="text-gray-500" style={{ fontSize: "11px" }}>{edu.graduationDate}</span>
-              </div>
-              <div className="text-gray-600" style={{ fontSize: "11px" }}>{edu.institution}{edu.location && `, ${edu.location}`}{edu.gpa && ` • GPA: ${edu.gpa}`}</div>
-              {edu.description && <p className="text-gray-700 mt-1">{edu.description}</p>}
-            </div>
-          ))}
-        </section>
-      )}
-
-      {skills.length > 0 && (
-        <section className="mb-5">
-          <h2 className="font-bold uppercase tracking-wider pb-1 mb-2" style={{ fontSize: fontSizeMap[c.fontSize].heading, borderBottom: `1px solid ${c.primaryColor}30`, color: c.primaryColor }}>Skills</h2>
-          <p className="text-gray-700">{skills.join(" • ")}</p>
-        </section>
-      )}
-
-      <CertificationsBlock data={data} variant="classic" primaryColor={c.primaryColor} />
-      <ProjectsBlock data={data} variant="classic" primaryColor={c.primaryColor} />
-      <LanguagesBlock data={data} variant="classic" primaryColor={c.primaryColor} />
-      <VolunteerBlock data={data} variant="classic" primaryColor={c.primaryColor} />
-      <AwardsBlock data={data} variant="classic" primaryColor={c.primaryColor} />
-      <ReferencesBlock data={data} variant="classic" primaryColor={c.primaryColor} />
+      {sectionOrder.map((key) => renderSection(key))}
       <CustomSectionsBlock data={data} variant="classic" primaryColor={c.primaryColor} />
 
       {!hasAnyContent && (

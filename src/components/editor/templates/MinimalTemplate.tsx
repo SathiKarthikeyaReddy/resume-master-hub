@@ -1,4 +1,4 @@
-import { ResumeData, TemplateCustomization } from "@/types/resume";
+import { ResumeData, TemplateCustomization, ResumeSectionKey } from "@/types/resume";
 import { CertificationsBlock, ProjectsBlock, LanguagesBlock, VolunteerBlock, AwardsBlock, ReferencesBlock, CustomSectionsBlock } from "./TemplateSections";
 
 interface MinimalTemplateProps { data: ResumeData; customization?: TemplateCustomization; }
@@ -9,6 +9,79 @@ const MinimalTemplate = ({ data, customization }: MinimalTemplateProps) => {
   const hasPersonalInfo = personalInfo.fullName || personalInfo.email || personalInfo.phone || personalInfo.location;
   const hasAnyContent = hasPersonalInfo || summary || experience.length > 0 || education.length > 0 || skills.length > 0 ||
     (data.certifications?.length > 0) || (data.projects?.length > 0) || (data.languages?.length > 0) || (data.volunteer?.length > 0) || (data.awards?.length > 0);
+
+  const renderSection = (key: ResumeSectionKey) => {
+    switch (key) {
+      case "personalInfo": return null;
+      case "summary":
+        if (!summary) return null;
+        return (
+          <section key="summary" className="mb-8">
+            <p className="text-gray-600 text-sm leading-relaxed border-l-2 pl-4" style={{ borderColor: `${color}40` }}>{summary}</p>
+          </section>
+        );
+      case "experience":
+        if (experience.length === 0) return null;
+        return (
+          <section key="experience" className="mb-8">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] mb-4" style={{ color }}>Experience</h2>
+            {experience.map((exp, index) => (
+              <div key={exp.id} className={index > 0 ? "mt-5" : ""}>
+                <div className="flex justify-between items-baseline mb-1">
+                  <h3 className="font-medium text-sm">{exp.jobTitle}</h3>
+                  <span className="text-xs text-gray-400">{exp.startDate} — {exp.current ? "Present" : exp.endDate}</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-2">{exp.company}{exp.location && ` · ${exp.location}`}</p>
+                {exp.bullets?.length > 0 && (
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    {exp.bullets.filter(b => b.trim()).map((bullet, idx) => <li key={idx}>• {bullet}</li>)}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </section>
+        );
+      case "education":
+        if (education.length === 0) return null;
+        return (
+          <section key="education" className="mb-8">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] mb-4" style={{ color }}>Education</h2>
+            {education.map((edu) => (
+              <div key={edu.id} className="mb-3">
+                <div className="flex justify-between items-baseline">
+                  <h3 className="font-medium text-sm">{edu.degree}</h3>
+                  <span className="text-xs text-gray-400">{edu.graduationDate}</span>
+                </div>
+                <p className="text-xs text-gray-500">{edu.institution}{edu.gpa && ` · GPA: ${edu.gpa}`}</p>
+              </div>
+            ))}
+          </section>
+        );
+      case "skills":
+        if (skills.length === 0) return null;
+        return (
+          <section key="skills" className="mb-8">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] mb-3" style={{ color }}>Skills</h2>
+            <p className="text-xs text-gray-600">{skills.join("  ·  ")}</p>
+          </section>
+        );
+      case "certifications":
+        return <CertificationsBlock key="certifications" data={data} variant="minimal" primaryColor={color} />;
+      case "projects":
+        return <ProjectsBlock key="projects" data={data} variant="minimal" primaryColor={color} />;
+      case "languages":
+        return <LanguagesBlock key="languages" data={data} variant="minimal" primaryColor={color} />;
+      case "volunteer":
+        return <VolunteerBlock key="volunteer" data={data} variant="minimal" primaryColor={color} />;
+      case "awards":
+        return <AwardsBlock key="awards" data={data} variant="minimal" primaryColor={color} />;
+      case "references":
+        return <ReferencesBlock key="references" data={data} variant="minimal" primaryColor={color} />;
+      default: return null;
+    }
+  };
+
+  const sectionOrder = data.sectionOrder || ["personalInfo", "summary", "experience", "education", "skills", "certifications", "projects", "languages", "volunteer", "awards", "references"];
 
   return (
     <div className="bg-white text-gray-900 p-10 min-h-[1123px] w-full max-w-[794px] mx-auto shadow-lg font-['Inter',_sans-serif] text-sm leading-relaxed">
@@ -29,56 +102,7 @@ const MinimalTemplate = ({ data, customization }: MinimalTemplateProps) => {
           </div>
         </div>
       </header>
-      {summary && (
-        <section className="mb-8">
-          <p className="text-gray-600 text-sm leading-relaxed border-l-2 pl-4" style={{ borderColor: `${color}40` }}>{summary}</p>
-        </section>
-      )}
-      {experience.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] mb-4" style={{ color }}>{`Experience`}</h2>
-          {experience.map((exp, index) => (
-            <div key={exp.id} className={index > 0 ? "mt-5" : ""}>
-              <div className="flex justify-between items-baseline mb-1">
-                <h3 className="font-medium text-sm">{exp.jobTitle}</h3>
-                <span className="text-xs text-gray-400">{exp.startDate} — {exp.current ? "Present" : exp.endDate}</span>
-              </div>
-              <p className="text-xs text-gray-500 mb-2">{exp.company}{exp.location && ` · ${exp.location}`}</p>
-              {exp.bullets?.length > 0 && (
-                <ul className="text-xs text-gray-600 space-y-1">
-                  {exp.bullets.filter(b => b.trim()).map((bullet, idx) => <li key={idx}>• {bullet}</li>)}
-                </ul>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
-      {education.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] mb-4" style={{ color }}>Education</h2>
-          {education.map((edu) => (
-            <div key={edu.id} className="mb-3">
-              <div className="flex justify-between items-baseline">
-                <h3 className="font-medium text-sm">{edu.degree}</h3>
-                <span className="text-xs text-gray-400">{edu.graduationDate}</span>
-              </div>
-              <p className="text-xs text-gray-500">{edu.institution}{edu.gpa && ` · GPA: ${edu.gpa}`}</p>
-            </div>
-          ))}
-        </section>
-      )}
-      {skills.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] mb-3" style={{ color }}>Skills</h2>
-          <p className="text-xs text-gray-600">{skills.join("  ·  ")}</p>
-        </section>
-      )}
-      <CertificationsBlock data={data} variant="minimal" primaryColor={color} />
-      <ProjectsBlock data={data} variant="minimal" primaryColor={color} />
-      <LanguagesBlock data={data} variant="minimal" primaryColor={color} />
-      <VolunteerBlock data={data} variant="minimal" primaryColor={color} />
-      <AwardsBlock data={data} variant="minimal" primaryColor={color} />
-      <ReferencesBlock data={data} variant="minimal" primaryColor={color} />
+      {sectionOrder.map((key) => renderSection(key))}
       <CustomSectionsBlock data={data} variant="minimal" primaryColor={color} />
       {!hasAnyContent && (
         <div className="text-center text-gray-400 py-20">

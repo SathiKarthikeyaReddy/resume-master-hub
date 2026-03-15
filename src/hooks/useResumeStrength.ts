@@ -39,17 +39,34 @@ export const useResumeStrength = (data: ResumeData): StrengthResult => {
         name: "Skills",
         completed: data.skills.length >= 3,
       },
+      {
+        name: "Location",
+        completed: Boolean(data.personalInfo.location),
+      },
+      {
+        name: "LinkedIn",
+        completed: Boolean(data.personalInfo.linkedin),
+      },
     ];
 
-    const completedSections = sections
+    // Bonus sections (optional but boost score)
+    const bonusSections = [
+      { name: "Certifications", completed: (data.certifications?.length || 0) > 0 },
+      { name: "Projects", completed: (data.projects?.length || 0) > 0 },
+      { name: "Languages", completed: (data.languages?.length || 0) > 0 },
+    ];
+
+    const allSections = [...sections, ...bonusSections];
+
+    const completedSections = allSections
       .filter((s) => s.completed)
       .map((s) => s.name);
-    const missingSections = sections
+    const missingSections = allSections
       .filter((s) => !s.completed)
       .map((s) => s.name);
 
     const percentage = Math.round(
-      (completedSections.length / sections.length) * 100
+      (completedSections.length / allSections.length) * 100
     );
 
     let label = "Getting Started";

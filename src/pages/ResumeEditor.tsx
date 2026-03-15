@@ -136,6 +136,19 @@ const ResumeEditor = () => {
     });
   };
 
+  // Auto-sync resume title when name changes
+  useEffect(() => {
+    if (resumeId && resumeData.personalInfo.fullName) {
+      const timeout = setTimeout(async () => {
+        await supabase
+          .from("resumes")
+          .update({ title: resumeData.personalInfo.fullName })
+          .eq("id", resumeId);
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [resumeData.personalInfo.fullName, resumeId]);
+
   const handleImportResume = (importedData: Partial<ResumeData>) => {
     setResumeData((prev) => ({
       ...prev,
@@ -180,6 +193,18 @@ const ResumeEditor = () => {
       education.forEach((e) => { txt += `${e.degree} - ${e.institution} (${e.graduationDate})\n`; });
     }
     if (skills.length) txt += `\nSKILLS\n${skills.join(", ")}\n`;
+    if (resumeData.certifications?.length) {
+      txt += `\nCERTIFICATIONS\n`;
+      resumeData.certifications.forEach((c) => { txt += `${c.name} - ${c.issuer} (${c.date})\n`; });
+    }
+    if (resumeData.projects?.length) {
+      txt += `\nPROJECTS\n`;
+      resumeData.projects.forEach((p) => { txt += `${p.name}: ${p.description}\n`; });
+    }
+    if (resumeData.languages?.length) {
+      txt += `\nLANGUAGES\n`;
+      resumeData.languages.forEach((l) => { txt += `${l.name} (${l.proficiency})\n`; });
+    }
     const blob = new Blob([txt], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -235,7 +260,7 @@ const ResumeEditor = () => {
       case "awards":
         return <div key="awards" className="border-t border-border pt-6"><AwardsSection data={resumeData.awards || []} onChange={(data) => updateResumeData("awards", data)} /></div>;
       case "references":
-        return <ReferencesSection key="references" data={resumeData.references || []} onChange={(data) => updateResumeData("references", data)} />;
+        return <div key="references" className="border-t border-border pt-6"><ReferencesSection data={resumeData.references || []} onChange={(data) => updateResumeData("references", data)} /></div>;
       default:
         return null;
     }

@@ -196,21 +196,14 @@ const CoverLetterGenerator = ({ resumeData }: CoverLetterGeneratorProps) => {
                 </div>
               </ScrollArea>
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleReset}
-                  className="flex-1 gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Generate Another
-                </Button>
-                <Textarea
-                  value={coverLetter}
-                  onChange={(e) => setCoverLetter(e.target.value)}
-                  className="hidden"
-                />
-              </div>
+              <Button
+                variant="outline"
+                onClick={handleReset}
+                className="w-full gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Generate Another
+              </Button>
             </>
           )}
         </div>

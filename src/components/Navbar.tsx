@@ -63,6 +63,7 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
             ) : user ? (
               <>
                 <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
+                <Link to="/applications" className="text-muted-foreground hover:text-foreground transition-colors">Applications</Link>
                 <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors">Settings</Link>
               </>
             ) : null}
@@ -126,6 +127,9 @@ const Navbar = ({ saveStatus }: NavbarProps) => {
                   </Button>
                   <Button variant="hero-outline" asChild className="w-full">
                     <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link to="/applications" onClick={() => setIsMenuOpen(false)}>Applications</Link>
                   </Button>
                   <Button variant="outline" asChild className="w-full">
                     <Link to="/settings" onClick={() => setIsMenuOpen(false)}>Settings</Link>

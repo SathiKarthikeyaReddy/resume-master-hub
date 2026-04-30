@@ -12,6 +12,7 @@ import ResumeEditor from "./pages/ResumeEditor";
 import SharedResume from "./pages/SharedResume";
 import Settings from "./pages/Settings";
 import ResetPassword from "./pages/ResetPassword";
+import JobTracker from "./pages/JobTracker";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/applications"
+              element={
+                <ProtectedRoute>
+                  <JobTracker />
                 </ProtectedRoute>
               }
             />

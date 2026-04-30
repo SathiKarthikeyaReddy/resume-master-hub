@@ -9,6 +9,8 @@ interface UseResumeAutoSaveProps {
   resumeId: string | null;
   resumeData: ResumeData;
   debounceMs?: number;
+  /** When true, skip the next auto-save (used to prevent loops on remote-driven updates). */
+  skipNext?: boolean;
 }
 
 interface UseResumeAutoSaveReturn {
@@ -21,15 +23,25 @@ export const useResumeAutoSave = ({
   resumeId,
   resumeData,
   debounceMs = 2000,
+  skipNext = false,
 }: UseResumeAutoSaveProps): UseResumeAutoSaveReturn => {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const isFirstRender = useRef(true);
+  const lastSerialized = useRef<string>("");
+  const skipNextRef = useRef(false);
   const { toast } = useToast();
+
+  // Update skip flag when external one changes
+  useEffect(() => {
+    if (skipNext) skipNextRef.current = true;
+  }, [skipNext]);
 
   const save = useCallback(async () => {
     if (!resumeId) return;
+    const serialized = JSON.stringify(resumeData);
+    if (serialized === lastSerialized.current) return; // no real change
 
     setSaveStatus("saving");
 
@@ -37,20 +49,18 @@ export const useResumeAutoSave = ({
       const { error } = await supabase
         .from("resumes")
         .update({
-          content: JSON.parse(JSON.stringify(resumeData)),
+          content: JSON.parse(serialized),
           updated_at: new Date().toISOString(),
         })
         .eq("id", resumeId);
 
       if (error) throw error;
 
+      lastSerialized.current = serialized;
       setSaveStatus("saved");
       setLastSaved(new Date());
 
-      // Reset to idle after 3 seconds
-      setTimeout(() => {
-        setSaveStatus("idle");
-      }, 3000);
+      setTimeout(() => setSaveStatus("idle"), 3000);
     } catch (error) {
       console.error("Error saving resume:", error);
       setSaveStatus("error");
@@ -64,34 +74,29 @@ export const useResumeAutoSave = ({
 
   // Debounced auto-save
   useEffect(() => {
-    // Skip first render
     if (isFirstRender.current) {
       isFirstRender.current = false;
+      lastSerialized.current = JSON.stringify(resumeData);
       return;
     }
 
     if (!resumeId) return;
 
-    // Clear existing timer
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
+    if (skipNextRef.current) {
+      skipNextRef.current = false;
+      lastSerialized.current = JSON.stringify(resumeData);
+      return;
     }
 
-    // Set new debounce timer
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       save();
     }, debounceMs);
 
     return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, [resumeData, resumeId, debounceMs, save]);
 
-  return {
-    saveStatus,
-    lastSaved,
-    save,
-  };
+  return { saveStatus, lastSaved, save };
 };

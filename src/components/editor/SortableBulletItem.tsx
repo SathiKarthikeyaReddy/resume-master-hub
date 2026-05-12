@@ -4,6 +4,8 @@ import { GripVertical, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AIAssistant from "./AIAssistant";
+import ActionVerbsHelper from "./ActionVerbsHelper";
+import { detectWeakOpener } from "@/lib/actionVerbs";
 
 interface SortableBulletItemProps {
   id: string;

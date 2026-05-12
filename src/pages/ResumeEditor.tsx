@@ -390,6 +390,9 @@ const ResumeEditor = () => {
                         <DropdownMenuItem onClick={() => handlePrint()}>
                           <Download className="w-4 h-4 mr-2" />Download PDF
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportResumeDocx(resumeData)}>
+                          <FileDown className="w-4 h-4 mr-2" />Export as DOCX
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleExportTxt}>
                           <FileDown className="w-4 h-4 mr-2" />Export as TXT
                         </DropdownMenuItem>

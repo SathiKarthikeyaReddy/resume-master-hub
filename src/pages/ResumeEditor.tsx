@@ -42,12 +42,15 @@ import CollaboratorPresence from "@/components/editor/CollaboratorPresence";
 import VersionHistory from "@/components/editor/VersionHistory";
 import SaveIndicator from "@/components/SaveIndicator";
 import ShareResumeDialog from "@/components/editor/ShareResumeDialog";
+import ATSScoreDialog from "@/components/editor/ATSScoreDialog";
 import { ResumeData, defaultResumeData, defaultSectionOrder, defaultTemplateCustomization, TemplateCustomization } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useResumeAutoSave } from "@/hooks/useResumeAutoSave";
 import { useResumeStrength } from "@/hooks/useResumeStrength";
 import { useResumeCollaboration } from "@/hooks/useResumeCollaboration";
 import { useResumeVersions } from "@/hooks/useResumeVersions";
+import { useUndoRedo } from "@/hooks/useUndoRedo";
+import { exportResumeDocx } from "@/lib/docxExport";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Eye, Edit3, Save, Download, Share2, FileDown } from "lucide-react";
+import { Eye, Edit3, Save, Download, Share2, FileDown, Undo2, Redo2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 import Navbar from "@/components/Navbar";
@@ -42,19 +42,22 @@ import CollaboratorPresence from "@/components/editor/CollaboratorPresence";
 import VersionHistory from "@/components/editor/VersionHistory";
 import SaveIndicator from "@/components/SaveIndicator";
 import ShareResumeDialog from "@/components/editor/ShareResumeDialog";
+import ATSScoreDialog from "@/components/editor/ATSScoreDialog";
 import { ResumeData, defaultResumeData, defaultSectionOrder, defaultTemplateCustomization, TemplateCustomization } from "@/types/resume";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useResumeAutoSave } from "@/hooks/useResumeAutoSave";
 import { useResumeStrength } from "@/hooks/useResumeStrength";
 import { useResumeCollaboration } from "@/hooks/useResumeCollaboration";
 import { useResumeVersions } from "@/hooks/useResumeVersions";
+import { useUndoRedo } from "@/hooks/useUndoRedo";
+import { exportResumeDocx } from "@/lib/docxExport";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const ResumeEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [resumeData, setResumeData] = useState<ResumeData>(defaultResumeData);
+  const { state: resumeData, set: setResumeData, replace: replaceResumeData, undo, redo } = useUndoRedo<ResumeData>(defaultResumeData);
   const [resumeId, setResumeId] = useState<string | null>(id || null);
   const [activeView, setActiveView] = useState<"editor" | "preview">("editor");
   const [isLoading, setIsLoading] = useState(true);
@@ -65,11 +68,11 @@ const ResumeEditor = () => {
   const { toast } = useToast();
   const resumeRef = useRef<HTMLDivElement>(null);
 
-  const { saveStatus } = useResumeAutoSave({ resumeId, resumeData, debounceMs: 2000 });
+  const { saveStatus, save } = useResumeAutoSave({ resumeId, resumeData, debounceMs: 2000 });
   const strength = useResumeStrength(resumeData);
   const { versions, isLoading: versionsLoading, fetchVersions, restoreVersion } = useResumeVersions(resumeId);
 
-  const handleRemoteUpdate = useCallback((data: ResumeData) => { setResumeData(data); }, []);
+  const handleRemoteUpdate = useCallback((data: ResumeData) => { replaceResumeData(data); }, [replaceResumeData]);
   const { collaborators, isConnected, broadcastUpdate } = useResumeCollaboration({ resumeId, resumeData, onRemoteUpdate: handleRemoteUpdate });
 
   const handlePrint = useReactToPrint({
@@ -77,6 +80,19 @@ const ResumeEditor = () => {
     documentTitle: resumeData.personalInfo.fullName || "Resume",
     pageStyle: `@page { size: A4; margin: 0; } @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`,
   });
+
+  // Ctrl+S manual save
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        save();
+        toast({ title: "Saved", description: "Resume saved." });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [save, toast]);
 
   useEffect(() => {
     const loadResume = async () => {
@@ -89,7 +105,7 @@ const ResumeEditor = () => {
         }
         if (data?.content) {
           const content = data.content as unknown as ResumeData & { template?: TemplateType };
-          setResumeData({
+          replaceResumeData({
             ...defaultResumeData,
             ...content,
             personalInfo: { ...defaultResumeData.personalInfo, ...content.personalInfo },
@@ -306,7 +322,14 @@ const ResumeEditor = () => {
                       <ResumeImport onImport={handleImportResume} />
                       <JobAnalyzer resumeData={resumeData} onAddSkill={handleAddSkillFromAnalysis} />
                       <CoverLetterGenerator resumeData={resumeData} />
-                      <VersionHistory versions={versions} isLoading={versionsLoading} onOpen={fetchVersions} onRestore={async (v) => { const restored = await restoreVersion(v); if (restored) setResumeData(restored); return restored; }} />
+                      <VersionHistory versions={versions} isLoading={versionsLoading} onOpen={fetchVersions} onRestore={async (v) => { const restored = await restoreVersion(v); if (restored) replaceResumeData(restored); return restored; }} />
+                      <ATSScoreDialog data={resumeData} />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undo} title="Undo (Ctrl+Z)">
+                        <Undo2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={redo} title="Redo (Ctrl+Shift+Z)">
+                        <Redo2 className="w-4 h-4" />
+                      </Button>
                       {resumeId && (
                         <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowShare(true)}>
                           <Share2 className="w-3.5 h-3.5" />
@@ -366,6 +389,9 @@ const ResumeEditor = () => {
                       <DropdownMenuContent>
                         <DropdownMenuItem onClick={() => handlePrint()}>
                           <Download className="w-4 h-4 mr-2" />Download PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportResumeDocx(resumeData)}>
+                          <FileDown className="w-4 h-4 mr-2" />Export as DOCX
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleExportTxt}>
                           <FileDown className="w-4 h-4 mr-2" />Export as TXT

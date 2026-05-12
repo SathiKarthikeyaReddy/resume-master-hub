@@ -322,7 +322,14 @@ const ResumeEditor = () => {
                       <ResumeImport onImport={handleImportResume} />
                       <JobAnalyzer resumeData={resumeData} onAddSkill={handleAddSkillFromAnalysis} />
                       <CoverLetterGenerator resumeData={resumeData} />
-                      <VersionHistory versions={versions} isLoading={versionsLoading} onOpen={fetchVersions} onRestore={async (v) => { const restored = await restoreVersion(v); if (restored) setResumeData(restored); return restored; }} />
+                      <VersionHistory versions={versions} isLoading={versionsLoading} onOpen={fetchVersions} onRestore={async (v) => { const restored = await restoreVersion(v); if (restored) replaceResumeData(restored); return restored; }} />
+                      <ATSScoreDialog data={resumeData} />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undo} title="Undo (Ctrl+Z)">
+                        <Undo2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={redo} title="Redo (Ctrl+Shift+Z)">
+                        <Redo2 className="w-4 h-4" />
+                      </Button>
                       {resumeId && (
                         <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowShare(true)}>
                           <Share2 className="w-3.5 h-3.5" />

@@ -57,7 +57,7 @@ import { useToast } from "@/hooks/use-toast";
 const ResumeEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [resumeData, setResumeData] = useState<ResumeData>(defaultResumeData);
+  const { state: resumeData, set: setResumeData, replace: replaceResumeData, undo, redo } = useUndoRedo<ResumeData>(defaultResumeData);
   const [resumeId, setResumeId] = useState<string | null>(id || null);
   const [activeView, setActiveView] = useState<"editor" | "preview">("editor");
   const [isLoading, setIsLoading] = useState(true);
@@ -68,11 +68,11 @@ const ResumeEditor = () => {
   const { toast } = useToast();
   const resumeRef = useRef<HTMLDivElement>(null);
 
-  const { saveStatus } = useResumeAutoSave({ resumeId, resumeData, debounceMs: 2000 });
+  const { saveStatus, save } = useResumeAutoSave({ resumeId, resumeData, debounceMs: 2000 });
   const strength = useResumeStrength(resumeData);
   const { versions, isLoading: versionsLoading, fetchVersions, restoreVersion } = useResumeVersions(resumeId);
 
-  const handleRemoteUpdate = useCallback((data: ResumeData) => { setResumeData(data); }, []);
+  const handleRemoteUpdate = useCallback((data: ResumeData) => { replaceResumeData(data); }, [replaceResumeData]);
   const { collaborators, isConnected, broadcastUpdate } = useResumeCollaboration({ resumeId, resumeData, onRemoteUpdate: handleRemoteUpdate });
 
   const handlePrint = useReactToPrint({
@@ -80,6 +80,19 @@ const ResumeEditor = () => {
     documentTitle: resumeData.personalInfo.fullName || "Resume",
     pageStyle: `@page { size: A4; margin: 0; } @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`,
   });
+
+  // Ctrl+S manual save
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        save();
+        toast({ title: "Saved", description: "Resume saved." });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [save, toast]);
 
   useEffect(() => {
     const loadResume = async () => {

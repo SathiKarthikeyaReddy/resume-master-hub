@@ -105,7 +105,7 @@ const ResumeEditor = () => {
         }
         if (data?.content) {
           const content = data.content as unknown as ResumeData & { template?: TemplateType };
-          setResumeData({
+          replaceResumeData({
             ...defaultResumeData,
             ...content,
             personalInfo: { ...defaultResumeData.personalInfo, ...content.personalInfo },

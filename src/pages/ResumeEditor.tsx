@@ -68,7 +68,13 @@ const ResumeEditor = () => {
   const { toast } = useToast();
   const resumeRef = useRef<HTMLDivElement>(null);
 
-  const { saveStatus, save } = useResumeAutoSave({ resumeId, resumeData, debounceMs: 2000 });
+  // Include the selected template in the auto-saved payload so it persists
+  // across reloads (previously it was only written on initial create).
+  const persistedResumeData = useMemo(
+    () => ({ ...resumeData, template }) as ResumeData,
+    [resumeData, template]
+  );
+  const { saveStatus, save } = useResumeAutoSave({ resumeId, resumeData: persistedResumeData, debounceMs: 2000 });
   const strength = useResumeStrength(resumeData);
   const { versions, isLoading: versionsLoading, fetchVersions, restoreVersion } = useResumeVersions(resumeId);
 

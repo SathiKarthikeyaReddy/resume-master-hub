@@ -322,8 +322,8 @@ const ResumeEditor = () => {
               <div className="p-6 pb-24 lg:pb-6">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <CollaboratorPresence collaborators={collaborators} isConnected={isConnected} />
-                    <div className="h-4 w-px bg-border hidden sm:block" />
+                    {resumeId && <CollaboratorPresence collaborators={collaborators} isConnected={isConnected} />}
+                    {resumeId && <div className="h-4 w-px bg-border hidden sm:block" />}
                     <div className="flex flex-wrap gap-2">
                       <ResumeImport onImport={handleImportResume} />
                       <JobAnalyzer resumeData={resumeData} onAddSkill={handleAddSkillFromAnalysis} />

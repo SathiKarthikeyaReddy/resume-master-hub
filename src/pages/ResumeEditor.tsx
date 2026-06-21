@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Eye, Edit3, Save, Download, Share2, FileDown, Undo2, Redo2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
@@ -68,7 +68,13 @@ const ResumeEditor = () => {
   const { toast } = useToast();
   const resumeRef = useRef<HTMLDivElement>(null);
 
-  const { saveStatus, save } = useResumeAutoSave({ resumeId, resumeData, debounceMs: 2000 });
+  // Include the selected template in the auto-saved payload so it persists
+  // across reloads (previously it was only written on initial create).
+  const persistedResumeData = useMemo(
+    () => ({ ...resumeData, template }) as ResumeData,
+    [resumeData, template]
+  );
+  const { saveStatus, save } = useResumeAutoSave({ resumeId, resumeData: persistedResumeData, debounceMs: 2000 });
   const strength = useResumeStrength(resumeData);
   const { versions, isLoading: versionsLoading, fetchVersions, restoreVersion } = useResumeVersions(resumeId);
 
@@ -316,8 +322,8 @@ const ResumeEditor = () => {
               <div className="p-6 pb-24 lg:pb-6">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <CollaboratorPresence collaborators={collaborators} isConnected={isConnected} />
-                    <div className="h-4 w-px bg-border hidden sm:block" />
+                    {resumeId && <CollaboratorPresence collaborators={collaborators} isConnected={isConnected} />}
+                    {resumeId && <div className="h-4 w-px bg-border hidden sm:block" />}
                     <div className="flex flex-wrap gap-2">
                       <ResumeImport onImport={handleImportResume} />
                       <JobAnalyzer resumeData={resumeData} onAddSkill={handleAddSkillFromAnalysis} />
